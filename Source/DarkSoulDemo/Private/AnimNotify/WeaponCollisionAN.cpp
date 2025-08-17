@@ -8,7 +8,7 @@
 void UWeaponCollisionAN::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
                                      float TotalDuration)
 {
-	Super::NotifyBegin(MeshComp, Animation, TotalDuration);
+	// Super::NotifyBegin(MeshComp, Animation, TotalDuration);
 	AActor* Owner =  MeshComp->GetOwner();
 	if(!IsValid(Owner))
 	{
@@ -25,7 +25,7 @@ void UWeaponCollisionAN::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequ
 
 void UWeaponCollisionAN::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	Super::NotifyEnd(MeshComp, Animation);
+	// Super::NotifyEnd(MeshComp, Animation);
 	AActor* Owner =  MeshComp->GetOwner();
 	if(!IsValid(Owner))
 	{

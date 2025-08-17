@@ -5,6 +5,7 @@
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/BaseEnemy.h"
+#include "Component/CharacterRotator.h"
 #include "Perception/AIPerceptionComponent.h"
 
 
@@ -34,18 +35,33 @@ void ADarkSoulAIController::OnPossess(APawn* InPawn)
 
 void ADarkSoulAIController::UpdateTarget()
 {
-	
 	TArray<AActor*> outActors;
 	AIPerception->GetKnownPerceivedActors(nullptr,outActors);
 	AController* firstController = GetWorld()->GetFirstPlayerController();
 	ACharacter* character = firstController->GetCharacter();
+	
+	ABaseEnemy* BaseEnemy = Cast<ABaseEnemy>(GetPawn());
+	if(!IsValid(BaseEnemy))
+	{
+		UE_LOG(LogTemp,Error,TEXT("ADarkSoulAIController::UpdateTarget Character is not ABaseEnemy"))
+		return;
+	}
+	UCharacterRotator* CharacterRotator = BaseEnemy->GetComponentByClass<UCharacterRotator>();
+	if(!IsValid(CharacterRotator))
+	{
+		return;
+	}
 	if(outActors.Contains(character))
 	{
-		GetBlackboardComponent()->SetValueAsObject(FName("Target"),character);	
+		GetBlackboardComponent()->SetValueAsObject(FName("Target"),character);
+		BaseEnemy->ShowHPBar();
+		CharacterRotator->UpdateTarget(character);
 	}
 	else
 	{
 		GetBlackboardComponent()->SetValueAsObject(FName("Target"),nullptr);
+		BaseEnemy->HideHPBar();
+		CharacterRotator->UpdateTarget(nullptr);
 	}
 }
 

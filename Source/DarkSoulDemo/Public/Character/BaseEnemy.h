@@ -8,6 +8,7 @@
 #include "Interface/CombatInterface.h"
 #include "BaseEnemy.generated.h"
 
+class UCharacterRotator;
 class ATargetPoint;
 class UWidgetComponent;
 class UBehaviorTree;
@@ -36,6 +37,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadWrite)
 	TObjectPtr<UCharacterCombat> CombatComponent;
+
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite)
+	TObjectPtr<UCharacterRotator> RotatorComponent;
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UWidgetComponent> LockOnWidget;
@@ -89,5 +93,11 @@ public:
 	//ICombatInterface End
 	
 	void EquipDefaultWeapon();
+
+	void ShowHPBar();
+	
+	void HideHPBar();
+
+	bool hasPatrolPoint()const{return PatrolPoints.Num() > 0;}
 };
 

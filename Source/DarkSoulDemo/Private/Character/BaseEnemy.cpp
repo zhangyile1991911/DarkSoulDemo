@@ -3,12 +3,17 @@
 
 #include "Character/BaseEnemy.h"
 
+#include "BrainComponent.h"
 #include "Component/CharacterState.h"
 #include "Component/CharacterStats.h"
 #include "Component/CharacterCombat.h"
+#include "Component/CharacterRotator.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Controller/EnemyAIController.h"
 #include "Equipment/BaseWeapon.h"
+#include "Perception/AIPerceptionSystem.h"
+#include "Perception/AISense_Damage.h"
 
 
 // Sets default values
@@ -20,6 +25,7 @@ ABaseEnemy::ABaseEnemy()
 	StateComponent = CreateDefaultSubobject<UCharacterState>(TEXT("State"));
 	StatsComponent = CreateDefaultSubobject<UCharacterStats>(TEXT("Stats"));
 	CombatComponent = CreateDefaultSubobject<UCharacterCombat>(TEXT("Combat"));
+	RotatorComponent = CreateDefaultSubobject<UCharacterRotator>(TEXT("Rotator"));
 	
 	LockOnWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockOnWidget"));
 	LockOnWidget->SetupAttachment(RootComponent);
@@ -29,6 +35,8 @@ ABaseEnemy::ABaseEnemy()
 
 	ShowWeaponMeshEditor = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShowWeaponMeshEditor"));
 	ShowWeaponMeshEditor->SetupAttachment(RootComponent);
+
+	
 	
 }
 
@@ -50,6 +58,7 @@ void ABaseEnemy::BeginPlay()
 	{
 		EquipDefaultWeapon();
 	}
+	
 }
 
 void ABaseEnemy::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
@@ -103,6 +112,11 @@ void ABaseEnemy::ListenDeathEvent()
 	//开启布娃娃系统模拟物理
 	GetMesh()->SetCollisionProfileName("Ragdoll");
 	GetMesh()->SetSimulatePhysics(true);
+	AEnemyAIController* controller = Cast<AEnemyAIController>(GetController());
+	if(IsValid(controller))
+	{
+		controller->GetBrainComponent()->StopLogic(FString("Enemy is Dead"));
+	}
 }
 
 void ABaseEnemy::HandlePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
@@ -110,6 +124,13 @@ void ABaseEnemy::HandlePointDamage(AActor* DamagedActor, float Damage, AControll
 	const UDamageType* DamageType, AActor* DamageCauser)
 {
 	StatsComponent->TakeDamage(Damage);
+	//通知PerceptionAI
+	UAIPerceptionSystem* PerceptionSystem = UAIPerceptionSystem::GetCurrent(this);
+	if (PerceptionSystem)
+	{//记录犯错 InInstigator应该传入对应的Pawn，但之前传入了InstigatedBy是个Controller
+		FAIDamageEvent Event(DamagedActor, InstigatedBy->GetPawn(), Damage, HitLocation, HitLocation, FName());
+		PerceptionSystem->OnEvent(Event);
+	}
 }
 
 
@@ -186,5 +207,15 @@ void ABaseEnemy::EquipDefaultWeapon()
 	{
 		weapon->EquipItem();
 	}
+}
+
+void ABaseEnemy::ShowHPBar()
+{
+	HPBarWidget->GetWidget()->SetVisibility(ESlateVisibility::Visible);
+}
+
+void ABaseEnemy::HideHPBar()
+{
+	HPBarWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 }
 
