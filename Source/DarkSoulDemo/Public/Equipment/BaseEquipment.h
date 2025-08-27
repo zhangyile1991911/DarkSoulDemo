@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "BaseEquipment.generated.h"
 
+class APickupItem;
+
 UCLASS(Blueprintable)
 class DARKSOULDEMO_API ABaseEquipment : public AActor
 {
@@ -25,13 +27,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UStaticMesh> EquipmentMesh;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<APickupItem> PickupItemClass;
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	TObjectPtr<UStaticMesh> GetEquipmentMesh()const{return EquipmentMesh;}
+	virtual TObjectPtr<UStaticMesh> GetEquipmentMesh()const{return EquipmentMesh;}
 
 	virtual void EquipItem();
 	virtual void UnequipItem();
 	virtual void AttachToPlayer(FName SocketName);
+	virtual void DetachFromPlayer(FName SocketName);
+
+	virtual void GeneratePickupActor();
 	
 };

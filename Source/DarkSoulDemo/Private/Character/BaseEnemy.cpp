@@ -206,6 +206,7 @@ void ABaseEnemy::EquipDefaultWeapon()
 	if(defaultWeapon && weapon)
 	{
 		weapon->EquipItem();
+		CombatComponent->SetWeapon(weapon);
 	}
 }
 

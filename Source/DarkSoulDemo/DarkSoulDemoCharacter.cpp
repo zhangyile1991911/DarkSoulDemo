@@ -20,6 +20,7 @@
 #include "Component/Targeting.h"
 #include "Interface/CanTargeting.h"
 #include "DarkSoulSystemLibrary.h"
+#include "Interface/SyncMsgToAnim.h"
 
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -94,6 +95,8 @@ void ADarkSoulDemoCharacter::BeginPlay()
 	
 	//在Blueprint中创建HUD
 	OnTakePointDamage.AddDynamic(this,&ThisClass::TakePointDamage);
+
+	GetMesh()->GetAnimInstance()->OnMontageEnded.AddDynamic(this,&ThisClass::WatchMontagedEnd);
 }
 
 void ADarkSoulDemoCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -104,6 +107,7 @@ void ADarkSoulDemoCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 	}
 	OnTakePointDamage.RemoveDynamic(this,&ThisClass::TakePointDamage);
+	GetMesh()->GetAnimInstance()->OnMontageEnded.RemoveDynamic(this,&ThisClass::WatchMontagedEnd);
 }
 
 // UPlayerStatsModel* ADarkSoulDemoCharacter::GetPlayerStatsViewModel()
@@ -179,6 +183,9 @@ void ADarkSoulDemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 
 		EnhancedInputComponent->BindAction(TargetLeftAction,ETriggerEvent::Started,this,&ThisClass::SwitchTargetLeft);
 		EnhancedInputComponent->BindAction(TargetRightAction,ETriggerEvent::Started,this,&ThisClass::SwitchTargetRight);
+
+		EnhancedInputComponent->BindAction(BlockAction,ETriggerEvent::Started,this,&ThisClass::ToggleBlocking);
+		EnhancedInputComponent->BindAction(BlockAction,ETriggerEvent::Completed,this,&ThisClass::ReleaseBlocking);
 	}
 	else
 	{
@@ -227,7 +234,8 @@ void ADarkSoulDemoCharacter::Rolling(const FInputActionValue& Value)
 	bool bSuccess = StatsComponent->DecreaseStamina(10);
 	if(bSuccess)
 	{
-		this->PlayAnimMontage(RollingAnimMontage,1.0f);	
+		this->PlayAnimMontage(RollingAnimMontage,1.0f);
+		StateComponent->AddState(Player_State_Rolling);
 	}
 	
 }
@@ -301,6 +309,38 @@ void ADarkSoulDemoCharacter::Interact(const FInputActionValue& Value)
 void ADarkSoulDemoCharacter::ToggleWeapon(const FInputActionValue& Value)
 {
 	ToggleWeaponInner();
+}
+
+void ADarkSoulDemoCharacter::ToggleBlocking(const FInputActionValue& Value)
+{
+	bool hasMainShield = CombatComponent->GetMainShield() != nullptr;
+	if(!hasMainShield)return;
+
+	bool bIsEnough = StatsComponent->CheckHasEnoughStamina(5.0);
+	if(!bIsEnough)return;
+
+	if(!StateComponent->CanBlocking())return;
+	
+	CombatComponent->EnableBlock();
+	
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if(AnimInstance->Implements<USyncMsgToAnim>())
+	{
+		ISyncMsgToAnim::Execute_SyncBlocking(AnimInstance,true);
+	}
+	StateComponent->AddState(Player_State_Blocking);
+}
+
+void ADarkSoulDemoCharacter::ReleaseBlocking(const FInputActionValue& Value)
+{
+	CombatComponent->DisableBlock();
+	
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if(AnimInstance->Implements<USyncMsgToAnim>())
+	{
+		ISyncMsgToAnim::Execute_SyncBlocking(AnimInstance,false);
+	}
+	StateComponent->RemoveState(Player_State_Blocking);
 }
 
 bool ADarkSoulDemoCharacter::CanPerformanceAttack()
@@ -476,6 +516,7 @@ void ADarkSoulDemoCharacter::HandleAttack(EMontageAction Action,FGameplayTag Att
 	int index = AnimMontage.Key->GetSectionIndex(AnimMontage.Value);
 	float duration = AnimMontage.Key->GetSectionLength(index);
 	PlayAnimMontage(AnimMontage.Key,1.0,AnimMontage.Value);
+	
 	//https://dev.epicgames.com/documentation/en-us/unreal-engine/gameplay-timers?application_version=4.27
 	//设置一个latent function
 	// StatsComponent->SetDelayResume(duration);
@@ -492,7 +533,7 @@ void ADarkSoulDemoCharacter::TakePointDamage(AActor* DamagedActor, float Damage,
 	FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection,
 	const UDamageType* DamageType, AActor* DamageCauser)
 {
-	const APawn* pawn = InstigatedBy->GetPawn();
+	// const APawn* pawn = InstigatedBy->GetPawn();
 	StatsComponent->TakeDamage(Damage);
 	AActor* InstigatedActor = InstigatedBy->GetPawn();
 	FVector InstigatedLocation = InstigatedActor->GetActorLocation();
@@ -504,6 +545,8 @@ void ADarkSoulDemoCharacter::TakePointDamage(AActor* DamagedActor, float Damage,
 	FName HitDirectionName = HitDirectionDisplayName(edir);
 	PlayAnimMontage(MontageTuple.Key,1.0f,HitDirectionName);
 	// UGameplayStatics::PlaySoundAtLocation();
+
+	StateComponent->AddState(Player_State_Hit);
 }
 
 void ADarkSoulDemoCharacter::HandleDeathEvent()
@@ -516,6 +559,32 @@ void ADarkSoulDemoCharacter::HandleDeathEvent()
 	GetMesh()->SetCollisionProfileName("Ragdoll");
 	GetMesh()->SetSimulatePhysics(true);
 }
+
+void ADarkSoulDemoCharacter::WatchMontagedEnd(UAnimMontage* Montage, bool bInterrupted)
+{
+	if(bInterrupted)
+	{
+		UE_LOG(LogTemp,Log,TEXT("%s play Montage name %s bInterrupted %d"),*GetName(),*Montage->GetName(),bInterrupted)
+
+		const FGameplayTagContainer& container = StateComponent->GetGameplayContainer();
+        bool bIsAttacking = container.HasTag(Player_State_Attacking);
+
+		UE_LOG(LogTemp,Log,TEXT("%s state is attacking %d"),*GetName(),bIsAttacking)
+		if(bIsAttacking)
+		{
+			StateComponent->EnableMovement();
+		}
+	}
+	if(Montage->GetName() == "AM_HitReact")
+	{
+		StateComponent->RemoveState(Player_State_Hit);
+	}
+	if(Montage->GetName() == "AM_RollUE5")
+	{
+		StateComponent->RemoveState(Player_State_Rolling);
+	}
+}
+
 
 void ADarkSoulDemoCharacter::ClearStateAndRegenerateStamina(FGameplayTag removeTag)
 {
@@ -538,6 +607,7 @@ void ADarkSoulDemoCharacter::EquipDefaultWeapon()
 	ABaseWeapon* weapon = Cast<ABaseWeapon>(defaultWeapon);
 	if(defaultWeapon && weapon)
 	{
+		CombatComponent->SetWeapon(weapon);
 		weapon->EquipItem();
 	}
 }
@@ -556,11 +626,19 @@ void ADarkSoulDemoCharacter::ToggleWeaponInner()
 	if(CombatComponent->CanEnableCombat())
 	{
 		anim = CombatComponent->GetMainWeapon()->GetMontageForAction(EMontageAction::Unequip);
+		
 	}
 	else
 	{
 		anim = CombatComponent->GetMainWeapon()->GetMontageForAction(EMontageAction::Equip);
 		nextCombatType = CombatComponent->GetMainWeapon()->GetCombatType();
+
+		const bool isOneHandSword = CombatComponent->GetMainWeapon()->GetCombatType() == ECombatType::SingleSword;
+		const bool hasShield = CombatComponent->GetMainShield() != nullptr;
+		if(isOneHandSword && hasShield)
+		{//单手剑的情况下,检查下是否有盾
+			nextCombatType = ECombatType::SwordShield;
+		}
 	}
 	//播放montage通过ABP中的slot
 	//基础slot 使用 layered blend per bone混合基础动画
@@ -569,7 +647,16 @@ void ADarkSoulDemoCharacter::ToggleWeaponInner()
 	UE_LOG(LogTemp,Log,TEXT("Start ToggleWeapon %f"),latent);
 	StartDelayTime(latent,[this,nextCombatType]()
 	{
-		UE_LOG(LogTemp,Log,TEXT("End ToggleWeapon nextCombatType %d"),nextCombatType);
+		UE_LOG(LogTemp,Log,TEXT("Finish ToggleWeapon nextCombatType %d"),nextCombatType);
 		CurrentCombatType = nextCombatType;
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if(IsValid(AnimInstance))
+		{
+			bool bImplemented = AnimInstance->Implements<USyncMsgToAnim>();
+			if(bImplemented)
+			{
+				ISyncMsgToAnim::Execute_SyncCombatMode(AnimInstance,CurrentCombatType);
+			}
+		}
 	});
 }

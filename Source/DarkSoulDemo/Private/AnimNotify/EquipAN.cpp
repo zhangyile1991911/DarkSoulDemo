@@ -4,8 +4,9 @@
 #include "AnimNotify/EquipAN.h"
 
 #include "Component/CharacterCombat.h"
-
+#include "Equipment/BaseShield.h"
 #include "Equipment/BaseWeapon.h"
+#include "Interface/CombatInterface.h"
 
 void UEquipAN::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
                       const FAnimNotifyEventReference& EventReference)
@@ -27,10 +28,31 @@ void UEquipAN::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anima
 	Combat->EnableCombat();
 	
 	TObjectPtr<ABaseWeapon> MainWeapon = Combat->GetMainWeapon();
-	if(!MainWeapon)
+	// if(!MainWeapon)
+	// {
+	// 	UE_LOG(LogTemp,Log,TEXT("UEquipAN::Notify ABaseWeapon is invalid"))
+	// 	return;
+	// }
+	// MainWeapon->AttachToPlayer(MainWeapon->GetEquippedSocket());
+	MainWeapon->EquipItem();
+
+	// bool isImplemented = Owner->GetClass()->ImplementsInterface(UCombatInterface::StaticClass());
+	// if(!isImplemented)return;
+
+	// ICombatInterface* CombatInterface = Cast<ICombatInterface>(Owner);
+	// if (CombatInterface->CombatType() == ECombatType::SwordShield)
+	// {
+	// 	TObjectPtr<ABaseShield> MainShield = Combat->GetMainShield();
+	// 	if(MainShield != nullptr)
+	// 	{
+	// 		MainShield->EquipItem();
+	// 	}
+	// }
+	bool isHandSword = MainWeapon->GetCombatType() == ECombatType::SingleSword;
+	ABaseShield* MainShield = Combat->GetMainShield();
+	bool hasShield = MainShield != nullptr;
+	if(hasShield && isHandSword)
 	{
-		UE_LOG(LogTemp,Log,TEXT("UEquipAN::Notify ABaseWeapon is invalid"))
-		return;
+		MainShield->EquipItem();
 	}
-	MainWeapon->AttachToPlayer(MainWeapon->GetEquippedSocket());
 }

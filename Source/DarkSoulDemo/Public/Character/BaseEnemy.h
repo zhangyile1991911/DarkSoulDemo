@@ -99,5 +99,6 @@ public:
 	void HideHPBar();
 
 	bool hasPatrolPoint()const{return PatrolPoints.Num() > 0;}
+	virtual ECombatType CombatType() override{return ECombatType::None;}
 };
 

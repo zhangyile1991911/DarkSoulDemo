@@ -4,7 +4,9 @@
 #include "AnimNotify/UnequipAN.h"
 
 #include "Component/CharacterCombat.h"
+#include "Equipment/BaseShield.h"
 #include "Equipment/BaseWeapon.h"
+#include "Interface/CombatInterface.h"
 
 void UUnequipAN::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
                         const FAnimNotifyEventReference& EventReference)
@@ -33,4 +35,13 @@ void UUnequipAN::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Ani
 	}
 
 	weaponPtr->UnequipItem();
+	if(weaponPtr->GetCombatType() == ECombatType::SingleSword)
+	{
+		TObjectPtr<ABaseShield> MainShield = combat->GetMainShield();
+		if(MainShield != nullptr)
+		{
+			MainShield->UnequipItem();
+		}	
+	}
+	
 }

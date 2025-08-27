@@ -78,7 +78,7 @@ void AFists::EquipItem()
 	{
 
 		UCharacterCombat* CombatComponent = GetOwner()->GetComponentByClass<UCharacterCombat>();
-		CombatComponent->SetWeapon(this);
+		// CombatComponent->SetWeapon(this);
 		CombatComponent->EnableCombat();
 		
 		BaseCollision->AddIgnoreActor(Character);

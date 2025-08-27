@@ -4,6 +4,7 @@
 #include "Component/CharacterCombat.h"
 
 #include "Equipment/BaseWeapon.h"
+#include "Equipment/BaseShield.h"
 #include "Equipment/Fists.h"
 
 
@@ -39,16 +40,29 @@ void UCharacterCombat::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UCharacterCombat::SetWeapon(TObjectPtr<ABaseWeapon> InWeapon)
 {
-	if(MainWeapon && MainWeapon->GetClass() != AFists::StaticClass())
+	if(IsValid(MainWeapon))
 	{
-		//先删除现在手里的武器
-		const FTransform& ActorTransform = GetOwner()->GetActorTransform();
-		FActorSpawnParameters params;
-		params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::Undefined;
-		params.TransformScaleMethod = ESpawnActorScaleMethod::MultiplyWithRoot;
-		GetWorld()->SpawnActor(MainWeapon->GetClass(),&ActorTransform,params);
-		GetWorld()->DestroyActor(MainWeapon);
-		MainWeapon = nullptr;
+		bool bIsFist = MainWeapon->GetClass()->IsChildOf<AFists>();
+		
+		if(!bIsFist)
+		{
+			MainWeapon->GeneratePickupActor();
+			//先删除现在手里的武器
+			// const FTransform& ActorTransform = GetOwner()->GetActorTransform();
+			FActorSpawnParameters params;
+			params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::Undefined;
+			params.TransformScaleMethod = ESpawnActorScaleMethod::MultiplyWithRoot;
+			// GetWorld()->SpawnActor(MainWeapon->GetClass(),&ActorTransform,params);
+			GetWorld()->DestroyActor(MainWeapon);
+			MainWeapon = nullptr;	
+		}
+		bool isTwoHand = InWeapon->GetCombatType() == ECombatType::TwoHand;
+		bool hasMainShield = MainShield != nullptr;
+		if(isTwoHand && hasMainShield)
+		{
+			MainShield->UnequipItem();
+		}
+		
 	}
 	if(InWeapon)
 	{
@@ -57,6 +71,28 @@ void UCharacterCombat::SetWeapon(TObjectPtr<ABaseWeapon> InWeapon)
 	else
 	{
 		MainWeapon = nullptr;
+	}
+}
+
+void UCharacterCombat::SetShield(TObjectPtr<ABaseShield> InShield)
+{
+	if(IsValid(MainShield))
+	{
+		const FTransform& ActorTransform = GetOwner()->GetActorTransform();
+		FActorSpawnParameters params;
+		params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::Undefined;
+		params.TransformScaleMethod = ESpawnActorScaleMethod::MultiplyWithRoot;
+		GetWorld()->SpawnActor(MainWeapon->GetClass(),&ActorTransform,params);
+		GetWorld()->DestroyActor(MainWeapon);
+		MainWeapon = nullptr;	
+	}
+	if(InShield)
+	{
+		MainShield = InShield;
+	}
+	else
+	{
+		MainShield = nullptr;
 	}
 }
 

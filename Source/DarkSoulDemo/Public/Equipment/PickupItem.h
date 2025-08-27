@@ -24,14 +24,17 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<ABaseEquipment> BaseEquipment;
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	
 	virtual void Interact(AActor* Actor) override;
+
+	void SetStaticMesh(TObjectPtr<UStaticMesh> InStaticMesh){StaticMesh->SetStaticMesh(InStaticMesh);}
+	void SetEquipmentClass(TSubclassOf<ABaseEquipment> InEquipmentClass){BaseEquipment = InEquipmentClass;}
 };

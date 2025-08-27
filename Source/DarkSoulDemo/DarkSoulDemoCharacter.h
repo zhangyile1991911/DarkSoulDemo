@@ -91,6 +91,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* TargetRightAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* BlockAction;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DefaultWeapon", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<ABaseWeapon> DefaultWeapon;
 	
@@ -127,6 +130,9 @@ protected:
 
 	void ToggleWeapon(const FInputActionValue& Value);
 
+	void ToggleBlocking(const FInputActionValue& Value);
+	void ReleaseBlocking(const FInputActionValue& Value);
+
 	void PerformanceAttack(const FInputActionValue& Value);
 
 	void PerformanceHeavyAttack(const FInputActionValue& Value);
@@ -148,6 +154,9 @@ protected:
 	UFUNCTION()
 	void TakePointDamage(AActor* DamagedActor, float  Damage, class AController*  InstigatedBy, FVector HitLocation, class UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const class UDamageType*  DamageType, AActor* DamageCauser);
 	void HandleDeathEvent();
+	UFUNCTION()
+	void WatchMontagedEnd(UAnimMontage* Montage,bool bInterrupted);
+
 protected:
 	//Montage
 	UPROPERTY(EditDefaultsOnly)
@@ -184,6 +193,8 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	virtual ECombatType CombatType()override{return CurrentCombatType;}
 
 	// UFUNCTION(BlueprintCallable)
 	// UPlayerStatsModel* GetPlayerStatsViewModel();

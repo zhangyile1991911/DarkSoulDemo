@@ -68,3 +68,37 @@ void UCharacterState::RecoverToNormalState()
 	StateContainer.AddTag(Player_State_GeneralAction);
 }
 
+bool UCharacterState::CanBlocking()
+{
+	if(StateContainer.HasTag(Player_State_Attacking))
+	{
+		return false;	
+	}
+	
+	if(StateContainer.HasTag(Player_State_Potion))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Hit))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Parrying))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Parried))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Rolling))
+	{
+		return false;
+	}
+	return true;
+}
+

@@ -65,4 +65,5 @@ public:
 	bool CanMovement()const{return MovementInput;}
 	void SetAttackAction(EMontageAction newAction){CurrentAttack = newAction;}
 	EMontageAction GetAttackAction()const{return CurrentAttack;}
+	bool CanBlocking();
 };

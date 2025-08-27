@@ -3,6 +3,7 @@
 
 #include "Equipment/BaseEquipment.h"
 
+#include "Equipment/PickupItem.h"
 #include "GameFramework/Character.h"
 
 
@@ -11,8 +12,6 @@ ABaseEquipment::ABaseEquipment()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneRoot"));
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
 	StaticMesh->SetupAttachment(RootComponent);
 }
@@ -44,6 +43,27 @@ void ABaseEquipment::AttachToPlayer(FName SocketName)
 		true
 		);
 	AttachToComponent(Character->GetMesh(),rules);
+	
+}
+
+void ABaseEquipment::DetachFromPlayer(FName SocketName)
+{
+}
+
+void ABaseEquipment::GeneratePickupActor()
+{
+	FActorSpawnParameters SpawnParameters;
+	AActor* Actor = GetOwner();
+	FTransform ActorTransform = Actor->GetActorTransform();
+	FVector Location = ActorTransform.GetLocation();
+	Location.Z = 10;
+	ActorTransform.SetLocation(Location);
+	APickupItem* PickupItem = GetWorld()->SpawnActorDeferred<APickupItem>(
+		PickupItemClass,ActorTransform);
+	// APickupItem* PickupItem = Cast<APickupItem>(pickupActor);
+	PickupItem->SetStaticMesh(EquipmentMesh);
+	PickupItem->SetEquipmentClass(this->GetClass());
+	PickupItem->FinishSpawning(ActorTransform);
 	
 }
 

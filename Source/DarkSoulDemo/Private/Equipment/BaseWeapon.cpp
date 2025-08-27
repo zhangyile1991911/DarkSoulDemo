@@ -84,24 +84,13 @@ void ABaseWeapon::EquipItem()
 	{
 		UE_LOG(LogTemp,Log,TEXT("ABaseWeapon::EquipItem UCharacterCombat == null"))
 	}
-	combat->SetWeapon(this);
+	// combat->SetWeapon(this);
 	combat->EnableCombat();
 	
 	FName SocketName = combat->CanEnableCombat() ? EquippedSocket : UnEquippedSocket;
 	AttachToPlayer(SocketName);
 	BaseCollision->SetWeapon(StaticMesh);
 	BaseCollision->AddIgnoreActor(GetOwner());
-	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if(IsValid(AnimInstance))
-	{
-		bool bImplemented = AnimInstance->Implements<USyncMsgToAnim>();
-		if(bImplemented)
-		{
-			ISyncMsgToAnim::Execute_SyncCombatMode(AnimInstance,CombatType);
-		}
-	}
-	
 }
 
 void ABaseWeapon::UnequipItem()
@@ -110,6 +99,17 @@ void ABaseWeapon::UnequipItem()
 	combat->DisableCombat();
 	AttachToPlayer(UnEquippedSocket);
 	BaseCollision->SetWeapon(nullptr);
+
+	// ACharacter* Character = Cast<ACharacter>(GetOwner());
+	// UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+	// if(IsValid(AnimInstance))
+	// {
+	// 	bool bImplemented = AnimInstance->Implements<USyncMsgToAnim>();
+	// 	if(bImplemented)
+	// 	{
+	// 		ISyncMsgToAnim::Execute_SyncCombatMode(AnimInstance,ECombatType::None);
+	// 	}
+	// }
 }
 
 void ABaseWeapon::AttachToPlayer(FName SocketName)
@@ -119,8 +119,8 @@ void ABaseWeapon::AttachToPlayer(FName SocketName)
 		EAttachmentRule::SnapToTarget,
 		true);
 	
-	
-	ACharacter* Character = Cast<ACharacter>(GetOwner());
+	AActor* OwnerActor = GetOwner();
+	ACharacter* Character = Cast<ACharacter>(OwnerActor);
 	AttachToComponent(Character->GetMesh(),Rules,SocketName);
 }
 

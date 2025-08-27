@@ -7,6 +7,7 @@
 #include "CharacterCombat.generated.h"
 
 
+class ABaseShield;
 class ABaseWeapon;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -21,10 +22,13 @@ protected:
 	bool bCombatEnable = true;
 	
 	UPROPERTY(BlueprintReadOnly,Transient)
-	bool bBlockEnable;
+	bool bBlockEnable = false;
 
 	UPROPERTY()
 	TObjectPtr<ABaseWeapon> MainWeapon;
+
+	UPROPERTY()
+	TObjectPtr<ABaseShield> MainShield;
 
 protected:
 	// Called when the game starts
@@ -36,9 +40,16 @@ public:
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 
 	void SetWeapon(TObjectPtr<ABaseWeapon> InWeapon);
+	void SetShield(TObjectPtr<ABaseShield> InShield);
 	TObjectPtr<ABaseWeapon> GetMainWeapon()const{return MainWeapon;}
+	TObjectPtr<ABaseShield> GetMainShield()const{return MainShield;}
 	bool GetBlockEnable()const{return bBlockEnable;}
 	bool CanEnableCombat()const{return bCombatEnable;}
 	void EnableCombat(){bCombatEnable = true;}
 	void DisableCombat(){bCombatEnable = false;}
+	void EnableBlock(){bBlockEnable = true;}
+	void DisableBlock(){bBlockEnable = false;}
+
+	UFUNCTION(BlueprintCallable)
+	bool HasMainShield()const{return MainShield != nullptr;}
 };

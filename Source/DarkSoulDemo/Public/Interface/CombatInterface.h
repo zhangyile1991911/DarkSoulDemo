@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 #include "EWeaponCollisionType.h"
+#include "ECombatType.h"
 #include "CombatInterface.generated.h"
 
 enum class EMontageAction : uint8;
@@ -27,6 +28,6 @@ public:
 	virtual void ActivateCollision(EWeaponCollisionType WeaponCollisionType) = 0;
 	virtual void DeactiveCollision(EWeaponCollisionType WeaponCollisionType) = 0;
 	virtual float PerformAttack(EMontageAction AttackType) = 0;
-	
+	virtual ECombatType CombatType() = 0;
 	
 };
