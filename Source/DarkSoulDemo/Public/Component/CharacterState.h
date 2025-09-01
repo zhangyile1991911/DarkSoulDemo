@@ -35,11 +35,14 @@ class DARKSOULDEMO_API UCharacterState : public UActorComponent
 	
 	UPROPERTY()
 	TObjectPtr<ADarkSoulDemoCharacter> ParentActor;
-
+	
 	EMontageAction CurrentAttack;
 	// FGameplayTag CurrentState;
-	FGameplayTagContainer StateContainer;
+	
 protected:
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
+	FGameplayTagContainer StateContainer;
+	
 	UPROPERTY(BlueprintReadOnly)
 	bool MovementInput = true;
 public:
@@ -57,6 +60,7 @@ public:
 	// void SetState(FGameplayTag newState){CurrentState = newState;}
 	void AddState(FGameplayTag newState);
 	void RemoveState(FGameplayTag removeState);
+	bool HasStateExact(FGameplayTag checkState);
 	void ClearAllState();
 	void RecoverToNormalState();
 	const FGameplayTagContainer& GetGameplayContainer(){return StateContainer;}
@@ -66,4 +70,6 @@ public:
 	void SetAttackAction(EMontageAction newAction){CurrentAttack = newAction;}
 	EMontageAction GetAttackAction()const{return CurrentAttack;}
 	bool CanBlocking();
+	bool CanParry();
+	bool CanDrinkPotion();
 };

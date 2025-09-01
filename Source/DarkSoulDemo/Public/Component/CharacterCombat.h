@@ -43,6 +43,7 @@ public:
 	void SetShield(TObjectPtr<ABaseShield> InShield);
 	TObjectPtr<ABaseWeapon> GetMainWeapon()const{return MainWeapon;}
 	TObjectPtr<ABaseShield> GetMainShield()const{return MainShield;}
+	
 	bool GetBlockEnable()const{return bBlockEnable;}
 	bool CanEnableCombat()const{return bCombatEnable;}
 	void EnableCombat(){bCombatEnable = true;}

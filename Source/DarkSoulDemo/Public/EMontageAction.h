@@ -13,4 +13,6 @@ enum class EMontageAction : uint8
 	SpecialAttack UMETA(DisplayName="SpecialAttack"),
 	HitReaction UMETA(DisplayName="HitReaction"),
 	DirectionalRolling UMETA(DisplayName="DirectionalRolling"),
+	BlockReaction UMETA(DisplayName="BlockReaction"),
+	Parry UMETA(DisplayName="Parry")
 };

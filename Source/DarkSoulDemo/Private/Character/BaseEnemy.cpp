@@ -58,6 +58,8 @@ void ABaseEnemy::BeginPlay()
 	{
 		EquipDefaultWeapon();
 	}
+	GetMesh()->GetAnimInstance()->OnMontageEnded.AddDynamic(this,&ThisClass::ListenAnimMontageFinish);
+
 	
 }
 
@@ -117,6 +119,9 @@ void ABaseEnemy::ListenDeathEvent()
 	{
 		controller->GetBrainComponent()->StopLogic(FString("Enemy is Dead"));
 	}
+	HideHPBar();
+	//忽视相机
+	GetMesh()->SetCollisionResponseToChannel(ECC_Camera,ECR_Ignore);
 }
 
 void ABaseEnemy::HandlePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
@@ -130,6 +135,14 @@ void ABaseEnemy::HandlePointDamage(AActor* DamagedActor, float Damage, AControll
 	{//记录犯错 InInstigator应该传入对应的Pawn，但之前传入了InstigatedBy是个Controller
 		FAIDamageEvent Event(DamagedActor, InstigatedBy->GetPawn(), Damage, HitLocation, HitLocation, FName());
 		PerceptionSystem->OnEvent(Event);
+	}
+}
+
+void ABaseEnemy::ListenAnimMontageFinish(UAnimMontage* Montage, bool bInterrupted)
+{
+	if(Montage->GetName() == "AM_Parried")
+	{
+		StateComponent->RemoveState(Player_State_Parried);
 	}
 }
 
@@ -188,6 +201,13 @@ float ABaseEnemy::PerformAttack(EMontageAction AttackType)
 	PlayAnimMontage(AnimMontage.Key,1.0,AnimMontage.Value);
 	
 	return duration;
+}
+
+void ABaseEnemy::Parried(AActor* Actor)
+{
+	StateComponent->AddState(Player_State_Parried);
+	StopAnimMontage();
+	PlayAnimMontage(AM_Parried,1.0);
 }
 
 void ABaseEnemy::EquipDefaultWeapon()

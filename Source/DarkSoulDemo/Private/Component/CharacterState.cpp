@@ -57,6 +57,11 @@ void UCharacterState::RemoveState(FGameplayTag removeState)
 	StateContainer.RemoveTag(removeState);
 }
 
+bool UCharacterState::HasStateExact(FGameplayTag checkState)
+{
+	return StateContainer.HasTagExact(checkState);
+}
+
 void UCharacterState::ClearAllState()
 {
 	StateContainer.Reset(0);
@@ -99,6 +104,89 @@ bool UCharacterState::CanBlocking()
 	{
 		return false;
 	}
+
+	if(StateContainer.HasTagExact(Player_State_Blocking))
+	{
+		return false;
+	}
 	return true;
 }
 
+bool UCharacterState::CanParry()
+{
+	if(StateContainer.HasTag(Player_State_Attacking))
+	{
+		return false;	
+	}
+	
+	if(StateContainer.HasTag(Player_State_Potion))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Hit))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Parrying))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Parried))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Rolling))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTagExact(Player_State_Blocking))
+    {
+    	return false;
+    }
+
+	return true;
+}
+
+bool UCharacterState::CanDrinkPotion()
+{
+	if(StateContainer.HasTag(Player_State_Attacking))
+	{
+		return false;	
+	}
+	
+	if(StateContainer.HasTag(Player_State_Potion))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Hit))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Parrying))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Parried))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTag(Player_State_Rolling))
+	{
+		return false;
+	}
+
+	if(StateContainer.HasTagExact(Player_State_Blocking))
+	{
+		return false;
+	}
+	return true;
+}

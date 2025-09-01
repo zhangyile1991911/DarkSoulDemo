@@ -7,7 +7,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/BaseEnemy.h"
 #include "GameFramework/Character.h"
-#include "UI/EDarkSoulAIBehavior.h"
+#include "EDarkSoulAIBehavior.h"
+#include "Component/CharacterState.h"
 
 UBTService_SetBehavior::UBTService_SetBehavior()
 {
@@ -44,6 +45,18 @@ void UBTService_SetBehavior::UpdateBehavior()
 	UBlackboardComponent* BlackboardComponent = AIController->GetBlackboardComponent();
 	if(BlackboardComponent == nullptr)return;
 
+	ABaseEnemy* BaseEnemy = Cast<ABaseEnemy>(AIPawn);
+	if(IsValid(BaseEnemy))
+	{
+		const TObjectPtr<UCharacterState> StateComp = BaseEnemy->GetStateComponent();
+		bool bStunned = StateComp->HasStateExact(Player_State_Parried);
+		if(bStunned)
+		{
+			BlackboardComponent->SetValueAsEnum(BehaviorKey.SelectedKeyName,uint8(EDarkSoulAIBehavior::Stunned));
+			return;
+		}
+	}
+
 	UObject* obj = BlackboardComponent->GetValueAsObject(TargetKey.SelectedKeyName);
 	if(IsValid(obj))
 	{
@@ -63,7 +76,7 @@ void UBTService_SetBehavior::UpdateBehavior()
 	}
 	else
 	{
-		ABaseEnemy* BaseEnemy = Cast<ABaseEnemy>(AIPawn);
+		
 		if(!IsValid(BaseEnemy))return;
 
 		if(BaseEnemy->hasPatrolPoint())

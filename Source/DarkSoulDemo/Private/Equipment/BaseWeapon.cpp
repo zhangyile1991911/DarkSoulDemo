@@ -166,7 +166,13 @@ TTuple<TObjectPtr<UAnimMontage>,FName> ABaseWeapon::GetMontageForAction(EMontage
 	{
 		Result.Key = row->Animation;
 		Result.Value = row->Animation->GetSectionName(comboIndex);
-		AdvanceStep(row->Animation);
+		switch (Action)
+		{
+			case EMontageAction::LightAttack:
+			case EMontageAction::HeavyAttack:
+				AdvanceStep(row->Animation);
+				break;
+		}
 	}
 	
 	return MoveTemp(Result);

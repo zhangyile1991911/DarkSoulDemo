@@ -38,6 +38,7 @@ public:
 	virtual void ActivateCollision(EWeaponCollisionType WeaponCollisionType) override;
 	virtual void DeactiveCollision(EWeaponCollisionType WeaponCollisionType) override;
 	virtual float PerformAttack(EMontageAction AttackType) override;
+	virtual void Parried(AActor* Actor) override;
 	//End CombatInterface
 private:
 	/** Camera boom positioning the camera behind the character */
@@ -94,8 +95,17 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* BlockAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ParryAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ConsumeAction;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DefaultWeapon", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<ABaseWeapon> DefaultWeapon;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="AnimMontage",meta=(AllowPrivateAccess="true"))
+	UAnimMontage* DrinkPotion;
 	
 	UPROPERTY(EditAnywhere,Category= Sound)
 	USoundBase* HitSound;
@@ -133,6 +143,8 @@ protected:
 	void ToggleBlocking(const FInputActionValue& Value);
 	void ReleaseBlocking(const FInputActionValue& Value);
 
+	void ToggleParry(const FInputActionValue& Value);
+
 	void PerformanceAttack(const FInputActionValue& Value);
 
 	void PerformanceHeavyAttack(const FInputActionValue& Value);
@@ -143,6 +155,8 @@ protected:
 
 	void SwitchTargetLeft(const FInputActionValue& Value);
 	void SwitchTargetRight(const FInputActionValue& Value);
+
+	void TogglePotion(const FInputActionValue& Value);
 protected:
 	void ToggleWeaponInner();
 	bool CanPerformanceAttack();
@@ -156,6 +170,8 @@ protected:
 	void HandleDeathEvent();
 	UFUNCTION()
 	void WatchMontagedEnd(UAnimMontage* Montage,bool bInterrupted);
+	bool CanBlockAttack(const AActor* InstigatorActor);
+	bool IsFacingActor(const AActor* InstigatorActor);
 
 protected:
 	//Montage

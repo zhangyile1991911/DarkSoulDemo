@@ -29,5 +29,6 @@ public:
 	virtual void DeactiveCollision(EWeaponCollisionType WeaponCollisionType) = 0;
 	virtual float PerformAttack(EMontageAction AttackType) = 0;
 	virtual ECombatType CombatType() = 0;
+	virtual void Parried(AActor* Actor) = 0;
 	
 };

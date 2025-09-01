@@ -50,6 +50,9 @@ protected:
 	UPROPERTY(EditInstanceOnly,BlueprintReadWrite,Category="Patrol")
 	TArray<ATargetPoint*> PatrolPoints;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UAnimMontage* AM_Parried;
+	
 	UPROPERTY(BlueprintReadOnly,Category="Patrol")
 	int PatrolIndex;
 
@@ -67,6 +70,8 @@ protected:
 	void ListenDeathEvent();
 	UFUNCTION()
 	void HandlePointDamage(AActor* DamagedActor, float Damage, class AController* InstigatedBy, FVector HitLocation, class UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const class UDamageType* DamageType, AActor* DamageCauser );
+	UFUNCTION()
+	void ListenAnimMontageFinish( UAnimMontage* Montage, bool bInterrupted);
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -89,7 +94,7 @@ public:
 	virtual void ActivateCollision(EWeaponCollisionType WeaponCollisionType)override;
 	virtual void DeactiveCollision(EWeaponCollisionType WeaponCollisionType)override;
 	virtual float PerformAttack(EMontageAction AttackType) override;
-	
+	virtual void Parried(AActor* Actor) override;
 	//ICombatInterface End
 	
 	void EquipDefaultWeapon();
@@ -100,5 +105,8 @@ public:
 
 	bool hasPatrolPoint()const{return PatrolPoints.Num() > 0;}
 	virtual ECombatType CombatType() override{return ECombatType::None;}
+
+	const TObjectPtr<UCharacterState> GetStateComponent()const{return StateComponent;}
+	
 };
 

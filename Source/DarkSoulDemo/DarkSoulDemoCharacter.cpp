@@ -43,6 +43,11 @@ float ADarkSoulDemoCharacter::PerformAttack(EMontageAction AttackType)
 	return 0;
 }
 
+void ADarkSoulDemoCharacter::Parried(AActor* Actor)
+{
+	//todo 
+}
+
 ADarkSoulDemoCharacter::ADarkSoulDemoCharacter()
 {
 	// Set size for collision capsule
@@ -174,18 +179,23 @@ void ADarkSoulDemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		//ToggleWeapon
 		EnhancedInputComponent->BindAction(ToggleWeaponAction,ETriggerEvent::Started,this,&ThisClass::ToggleWeapon);
 
+		//Attack
 		EnhancedInputComponent->BindAction(AttackAction,ETriggerEvent::Started,this,&ThisClass::PerformanceAttack);
 		EnhancedInputComponent->BindAction(AttackAction,ETriggerEvent::Triggered,this,&ThisClass::PerformanceSpecialAttack);
 		
 		EnhancedInputComponent->BindAction(HeavyAttackAction,ETriggerEvent::Started,this,&ThisClass::PerformanceHeavyAttack);
 
+		//Focus Target
 		EnhancedInputComponent->BindAction(TargetAction,ETriggerEvent::Started,this,&ThisClass::ToggleTarget);
 
 		EnhancedInputComponent->BindAction(TargetLeftAction,ETriggerEvent::Started,this,&ThisClass::SwitchTargetLeft);
 		EnhancedInputComponent->BindAction(TargetRightAction,ETriggerEvent::Started,this,&ThisClass::SwitchTargetRight);
-
+		//Blocking
 		EnhancedInputComponent->BindAction(BlockAction,ETriggerEvent::Started,this,&ThisClass::ToggleBlocking);
 		EnhancedInputComponent->BindAction(BlockAction,ETriggerEvent::Completed,this,&ThisClass::ReleaseBlocking);
+		EnhancedInputComponent->BindAction(ParryAction,ETriggerEvent::Started,this,&ThisClass::ToggleParry);
+
+		EnhancedInputComponent->BindAction(ConsumeAction,ETriggerEvent::Started,this,&ThisClass::TogglePotion);
 	}
 	else
 	{
@@ -343,6 +353,25 @@ void ADarkSoulDemoCharacter::ReleaseBlocking(const FInputActionValue& Value)
 	StateComponent->RemoveState(Player_State_Blocking);
 }
 
+void ADarkSoulDemoCharacter::ToggleParry(const FInputActionValue& Value)
+{
+	if(CombatComponent->HasMainShield() == false)return;
+
+	if(StateComponent->CanParry() == false)return;
+
+	const float ParryCost = CombatComponent->GetMainWeapon()->GetCostStamina(EMontageAction::Parry);
+	bool hasEnoughStamina = StatsComponent->CheckHasEnoughStamina(ParryCost);
+	if(!hasEnoughStamina)return;
+
+	//扣除体力 暂停回复
+	StatsComponent->DecreaseStamina(ParryCost);
+	StatsComponent->PauseRegenerateStamina();
+	//播放AnimMontage
+	auto ParryTuple = CombatComponent->GetMainWeapon()->GetMontageForAction(EMontageAction::Parry);
+	PlayAnimMontage(ParryTuple.Key,1.0);
+	
+}
+
 bool ADarkSoulDemoCharacter::CanPerformanceAttack()
 {
 	bool bHasTag = StateComponent->GetGameplayContainer().HasTagExact(Player_State_Attacking);
@@ -489,6 +518,15 @@ void ADarkSoulDemoCharacter::SwitchTargetRight(const FInputActionValue& Value)
 	SwitchActorLockOnIcon(curTarget,true);
 }
 
+void ADarkSoulDemoCharacter::TogglePotion(const FInputActionValue& Value)
+{
+	bool bCanDrink = StateComponent->CanDrinkPotion();
+	if(!bCanDrink)return;
+
+	StateComponent->AddState(Player_State_Potion);
+	PlayAnimMontage(DrinkPotion,1.0);
+}
+
 void ADarkSoulDemoCharacter::HandleAttack(EMontageAction Action,FGameplayTag AttackTag)
 {
 	TObjectPtr<ABaseWeapon> MainWeapon = CombatComponent->GetMainWeapon();
@@ -534,19 +572,46 @@ void ADarkSoulDemoCharacter::TakePointDamage(AActor* DamagedActor, float Damage,
 	const UDamageType* DamageType, AActor* DamageCauser)
 {
 	// const APawn* pawn = InstigatedBy->GetPawn();
-	StatsComponent->TakeDamage(Damage);
+	bool canBlock = CanBlockAttack(InstigatedBy->GetPawn());
+	if(canBlock)
+	{
+		//如果当前在防御 那就播放防御动画
+		auto MontageTuple = CombatComponent->GetMainWeapon()->GetMontageForAction(EMontageAction::BlockReaction);
+		PlayAnimMontage(MontageTuple.Key,1.0f);
+		float costStamina = CombatComponent->GetMainWeapon()->GetCostStamina(EMontageAction::BlockReaction);
+		StatsComponent->DecreaseStamina(costStamina);	
+	}
+
+	bool isParring = StateComponent->HasStateExact(Player_State_Parrying);
+	bool isFacing = IsFacingActor(InstigatedBy->GetPawn());
+	if(isParring && isFacing)
+	{
+		UE_LOG(LogTemp,Log,TEXT("Parry %s Attack"),*InstigatedBy->GetPawn()->GetName())
+		AActor* Actor = InstigatedBy->GetPawn();
+		const bool isImplemented = Actor->GetClass()->ImplementsInterface(UCombatInterface::StaticClass());
+		if(isImplemented)
+		{
+			ICombatInterface* CombatInterface = Cast<ICombatInterface>(Actor);
+			CombatInterface->Parried(this);
+		}
+		return;
+	}
+	
+	//计算角度
 	AActor* InstigatedActor = InstigatedBy->GetPawn();
 	FVector InstigatedLocation = InstigatedActor->GetActorLocation();
 	FVector Direction = InstigatedLocation - GetActorLocation();
 	float degress = UDarkSoulSystemLibrary::CalculateZAxisRotation(Direction,GetActorForwardVector());
+		
 	EHitDirection edir = UDarkSoulSystemLibrary::ConvertToHitDirection(degress);
 	auto MontageTuple = CombatComponent->GetMainWeapon()->GetMontageForAction(EMontageAction::HitReaction);
-
+	//根据角度 获取对应受击动画
 	FName HitDirectionName = HitDirectionDisplayName(edir);
 	PlayAnimMontage(MontageTuple.Key,1.0f,HitDirectionName);
-	// UGameplayStatics::PlaySoundAtLocation();
-
+	StatsComponent->TakeDamage(Damage);
 	StateComponent->AddState(Player_State_Hit);
+	
+	// UGameplayStatics::PlaySoundAtLocation();
 }
 
 void ADarkSoulDemoCharacter::HandleDeathEvent()
@@ -583,13 +648,43 @@ void ADarkSoulDemoCharacter::WatchMontagedEnd(UAnimMontage* Montage, bool bInter
 	{
 		StateComponent->RemoveState(Player_State_Rolling);
 	}
+	if(Montage->GetName() == "AM_Parry")
+	{
+		StatsComponent->ResumeRegenerateStamina();
+	}
+	if(Montage->GetName() == "AM_DrinkPotion")
+	{
+		StateComponent->RemoveState(Player_State_Potion);
+	}
+}
+
+bool ADarkSoulDemoCharacter::IsFacingActor(const AActor* DamageInstigator)
+{
+	//判断敌人位置是否在正面
+	FVector selfForward = GetActorForwardVector().GetSafeNormal();
+	FVector InstigatorLocation =  DamageInstigator->GetActorLocation();
+	FVector InstigatorForward = (InstigatorLocation - GetActorLocation()).GetSafeNormal();
+	float degress = FVector::DotProduct(selfForward,InstigatorForward);
+	return degress >= 0.5f;
+}
+
+bool ADarkSoulDemoCharacter::CanBlockAttack(const AActor* DamageInstigator)
+{
+	//判断敌人位置是否在正面
+	bool isFacing = IsFacingActor(DamageInstigator);
+	//判断当前状态是否在防御
+	bool isBlockingState = StateComponent->HasStateExact(Player_State_Blocking);
+	//体力是否足够
+	bool hasEnoughStamina = StatsComponent->CheckHasEnoughStamina(5.0);
+	
+	return isFacing && isBlockingState && hasEnoughStamina;
 }
 
 
 void ADarkSoulDemoCharacter::ClearStateAndRegenerateStamina(FGameplayTag removeTag)
 {
 	StatsComponent->ResumeRegenerateStamina();
-	// StateComponent->RemoveState(removeTag);
+	StateComponent->RemoveState(removeTag);
 	StateComponent->RemoveState(Player_State_Attacking);
 }
 
