@@ -22,7 +22,7 @@ UPotionInventory::UPotionInventory()
 void UPotionInventory::BeginPlay()
 {
 	Super::BeginPlay();
-
+	PotionQuantity = 5;
 	// ...
 	
 }
@@ -37,10 +37,22 @@ void UPotionInventory::TickComponent(float DeltaTime, ELevelTick TickType,
 	// ...
 }
 
+void UPotionInventory::RefreshPotionNum()
+{
+	if(PotionChangeEvent.IsBound())
+		PotionChangeEvent.Broadcast(PotionQuantity);
+}
+
 void UPotionInventory::DrinkPotion()
 {
+	if(PotionQuantity <= 0)return;
 	AActor* owner = GetOwner();
 	UCharacterStats* CharacterStats = owner->GetComponentByClass<UCharacterStats>();
 	CharacterStats->Heal(PotionHealAmount);
+
+	PotionQuantity--;
+	
+	if(PotionChangeEvent.IsBound())
+		PotionChangeEvent.Broadcast(PotionQuantity);
 }
 

@@ -122,7 +122,7 @@ void UCharacterStats::DecreaseHealth(float value)
 	}
 }
 
-void UCharacterStats::Heal(float HealAmount)
+void UCharacterStats::Heal(float HealAmount) 
 {
 	BaseHealth += HealAmount;
 	BaseHealth = FMathf::Clamp(BaseHealth,0,MaxHealth);

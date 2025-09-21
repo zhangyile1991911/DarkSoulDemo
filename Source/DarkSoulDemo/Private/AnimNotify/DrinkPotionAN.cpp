@@ -5,7 +5,7 @@
 
 #include "Component/PotionInventory.h"
 
-void UDrinkPotionAN::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UDrinkPotionAN::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
 	Super::Notify(MeshComp, Animation);
 	AActor* Actor = MeshComp->GetOwner();

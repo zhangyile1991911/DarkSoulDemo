@@ -24,6 +24,8 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
+class UPotionInventory;
+class UEnhancedInputLocalPlayerSubsystem;
 
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -106,6 +108,9 @@ private:
 
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="AnimMontage",meta=(AllowPrivateAccess="true"))
 	UAnimMontage* DrinkPotion;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="AnimMontage",meta=(AllowPrivateAccess="true"))
+	UAnimMontage* KnockBack;
 	
 	UPROPERTY(EditAnywhere,Category= Sound)
 	USoundBase* HitSound;
@@ -116,6 +121,11 @@ private:
 	UPROPERTY()
 	TArray<AActor*> TargetCandidate;
 	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess="true"))
+	TSubclassOf<AActor> PotionBP;
+
+	UPROPERTY()
+	UEnhancedInputLocalPlayerSubsystem* PlayerInputSubSystem;
 	// int TargetCandidateIndex;
 public:
 	ADarkSoulDemoCharacter();
@@ -160,6 +170,7 @@ protected:
 protected:
 	void ToggleWeaponInner();
 	bool CanPerformanceAttack();
+	bool CanAutomaticallyDrawWeapon();
 	void StartDelayTime(float latent,FTimerDelegate::TMethodPtr<ADarkSoulDemoCharacter> delayCallback);
 	void StartDelayTime(float latent,TFunction<void()>&& delayCallback);
 	void ClearStateAndRegenerateStamina(FGameplayTag removeTag);
@@ -167,17 +178,23 @@ protected:
 	void HandleAttack(EMontageAction,FGameplayTag);
 	UFUNCTION()
 	void TakePointDamage(AActor* DamagedActor, float  Damage, class AController*  InstigatedBy, FVector HitLocation, class UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const class UDamageType*  DamageType, AActor* DamageCauser);
+	UFUNCTION()
+	void TakeRadialDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, FVector Origin, const FHitResult& HitInfo, AController* InstigatedBy, AActor* DamageCauser);
 	void HandleDeathEvent();
 	UFUNCTION()
 	void WatchMontagedEnd(UAnimMontage* Montage,bool bInterrupted);
 	bool CanBlockAttack(const AActor* InstigatorActor);
 	bool IsFacingActor(const AActor* InstigatorActor);
-
+	void TakeHitBack(AController* InstigatedBy,float Damage);
+	void TakeKnockBack(AController* InstigatedBy,float Damage);
+	void DoCameraShake();
 protected:
 	//Montage
 	UPROPERTY(EditDefaultsOnly)
 	UAnimMontage* RollingAnimMontage;
-
+	
+	UPROPERTY(EditDefaultsOnly)
+	UAnimMontage* TargetedRollingAnimMontage;
 	// UPROPERTY(BlueprintReadOnly)
 	// UPlayerStatsModel* PlayerStatsViewModel;
 protected:
@@ -193,10 +210,29 @@ protected:
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TObjectPtr<UTargeting> TargetingComponent;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	TObjectPtr<UPotionInventory> PotionComponent;
 protected:
 	//状态
 	UPROPERTY(EditAnywhere,BlueprintReadOnly)
 	ECombatType CurrentCombatType;
+
+	UPROPERTY()
+	TObjectPtr<AActor> PotionMesh;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CameraShake")
+	float InnerRadius;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CameraShake")
+	float OuterRadius;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CameraShake")
+	float Falloff;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CameraShake")
+	TSubclassOf<UCameraShakeBase> CameraShakeClass;
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

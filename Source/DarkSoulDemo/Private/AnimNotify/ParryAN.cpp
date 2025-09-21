@@ -5,9 +5,9 @@
 
 #include "Component/CharacterState.h"
 
-void UParryAN::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
+void UParryAN::NotifyBegin(USkeletalMeshComponent * MeshComp, UAnimSequenceBase * Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
-	Super::NotifyBegin(MeshComp, Animation, TotalDuration);
+	Super::NotifyBegin(MeshComp, Animation, TotalDuration,EventReference);
 
 	AActor* Owner = MeshComp->GetOwner();
 	if(!IsValid(Owner))return;
@@ -18,9 +18,9 @@ void UParryAN::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* 
 	stateComp->AddState(Player_State_Parrying);
 }
 
-void UParryAN::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UParryAN::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,const FAnimNotifyEventReference& EventReference)
 {
-	Super::NotifyEnd(MeshComp, Animation);
+	Super::NotifyEnd(MeshComp, Animation,EventReference);
 	
 	AActor* Owner = MeshComp->GetOwner();
     if(!IsValid(Owner))return;

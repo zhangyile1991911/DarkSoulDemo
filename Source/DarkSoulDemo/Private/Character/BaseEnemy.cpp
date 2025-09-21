@@ -12,6 +12,7 @@
 #include "Components/WidgetComponent.h"
 #include "Controller/EnemyAIController.h"
 #include "Equipment/BaseWeapon.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Perception/AIPerceptionSystem.h"
 #include "Perception/AISense_Damage.h"
 
@@ -144,6 +145,11 @@ void ABaseEnemy::ListenAnimMontageFinish(UAnimMontage* Montage, bool bInterrupte
 	{
 		StateComponent->RemoveState(Player_State_Parried);
 	}
+	if(Montage->GetName() == "AM_Boss_TwoHandSpecial")
+	{
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	}
+	StatsComponent->ResumeRegenerateStamina();
 }
 
 
@@ -195,11 +201,24 @@ float ABaseEnemy::PerformAttack(EMontageAction AttackType)
 {
 	TObjectPtr<ABaseWeapon> MainWeapon = CombatComponent->GetMainWeapon();
 	TTuple<TObjectPtr<UAnimMontage>,FName> AnimMontage = MainWeapon->GetMontageForAction(AttackType);
+	float costStamina = MainWeapon->GetCostStamina(AttackType);
+	StatsComponent->DecreaseStamina(costStamina);
+	StatsComponent->PauseRegenerateStamina();
+	if(AttackType == EMontageAction::SpecialAttack)
+	{
+		int numSection = AnimMontage.Key->GetNumSections();
+		int index = 1;//FMath::RandRange(0,numSection);
+		PlayAnimMontage(AnimMontage.Key,1.0,AnimMontage.Key->GetSectionName(index));
+		float duration = AnimMontage.Key->GetSectionLength(index);
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		return duration;
+	}
+	
+	
 	if(!IsValid(AnimMontage.Key)) return 0;
 	int sectionIndex = AnimMontage.Key->GetSectionIndex(AnimMontage.Value);
 	float duration = AnimMontage.Key->GetSectionLength(sectionIndex);
 	PlayAnimMontage(AnimMontage.Key,1.0,AnimMontage.Value);
-	
 	return duration;
 }
 
@@ -230,12 +249,22 @@ void ABaseEnemy::EquipDefaultWeapon()
 	}
 }
 
-void ABaseEnemy::ShowHPBar()
+// void ABaseEnemy::ShowHPBar()
+// {
+// 	
+// }
+//
+// void ABaseEnemy::HideHPBar()
+// {
+// 	
+// }
+
+void ABaseEnemy::ShowHPBar_Implement()
 {
 	HPBarWidget->GetWidget()->SetVisibility(ESlateVisibility::Visible);
 }
 
-void ABaseEnemy::HideHPBar()
+void ABaseEnemy::HideHPBar_Implement()
 {
 	HPBarWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 }

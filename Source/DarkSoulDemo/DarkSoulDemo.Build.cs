@@ -17,7 +17,8 @@ public class DarkSoulDemo : ModuleRules
 			"GameplayTags", 
 			"ModelViewViewModel",
 			"UMG",
-			"AIModule"
+			"AIModule",
+			"NavigationSystem", "GameplayCameras"
 		});
 	}
 }

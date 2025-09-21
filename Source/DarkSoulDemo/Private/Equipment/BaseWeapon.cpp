@@ -11,8 +11,8 @@
 #include "DarkSoulDemo/DarkSoulDemoCharacter.h"
 #include "DataTableDefine/FMontageAction.h"
 #include "GameFramework/Character.h"
-#include "Interface/SyncMsgToAnim.h"
 #include "Kismet/GameplayStatics.h"
+#include "DamageType/DarkSoulDamageType.h"
 
 
 // Sets default values
@@ -73,7 +73,7 @@ void ABaseWeapon::HandleDamageActor(const FHitResult& hitData)
 			hitData,
 			Owner->GetInstigatorController(),
 			this,
-			nullptr);
+			DamageType);
 	
 }
 

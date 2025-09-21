@@ -6,16 +6,22 @@
 #include "Components/ActorComponent.h"
 #include "PotionInventory.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUpdatePotionEvent,int,PotionNum);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class DARKSOULDEMO_API UPotionInventory : public UActorComponent
 {
 	GENERATED_BODY()
 protected:
-	
+
+	UPROPERTY(BlueprintReadOnly)
 	int PotionQuantity;
+	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	float PotionHealAmount;
+
+	UPROPERTY(BlueprintAssignable)
+	FUpdatePotionEvent PotionChangeEvent;
 public:
 	// Sets default values for this component's properties
 	UPotionInventory();
@@ -29,6 +35,7 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 
-	
+	void RefreshPotionNum();
 	void DrinkPotion();
+	bool HasPotion()const{return PotionQuantity > 0;}
 };

@@ -97,11 +97,15 @@ public:
 	virtual void Parried(AActor* Actor) override;
 	//ICombatInterface End
 	
-	void EquipDefaultWeapon();
-
+	void EquipDefaultWeapon(); 
+	UFUNCTION(BlueprintImplementableEvent)
 	void ShowHPBar();
 	
+	UFUNCTION(BlueprintImplementableEvent)
 	void HideHPBar();
+
+	void ShowHPBar_Implement();
+	void HideHPBar_Implement();
 
 	bool hasPatrolPoint()const{return PatrolPoints.Num() > 0;}
 	virtual ECombatType CombatType() override{return ECombatType::None;}

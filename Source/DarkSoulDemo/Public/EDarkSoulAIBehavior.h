@@ -8,5 +8,6 @@ enum class EDarkSoulAIBehavior : uint8
 	Patrol UMETA(DisplayName="Patrol"),
 	MeleeAttack UMETA(DisplayName="MeleeAttack"),
 	Approach  UMETA(DisplayName="Approach"),
-	Stunned UMETA(DisplayName="Stunned")
+	Stunned UMETA(DisplayName="Stunned"),
+	Strafe UMETA(DisplayName="Strafe")
 };

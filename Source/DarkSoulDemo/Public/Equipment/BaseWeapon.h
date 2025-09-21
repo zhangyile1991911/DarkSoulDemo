@@ -11,6 +11,7 @@
 #include "BaseWeapon.generated.h"
 
 
+class UDarkSoulDamageType;
 class UWeaponCollision;
 
 UCLASS(Blueprintable)
@@ -64,6 +65,9 @@ protected:
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Damage")
 	float SpecialAttackMultiplier = 0.0f;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Damage")
+	TSubclassOf<UDarkSoulDamageType> DamageType;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

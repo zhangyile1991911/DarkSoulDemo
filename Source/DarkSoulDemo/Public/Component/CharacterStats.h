@@ -17,7 +17,7 @@ enum class ECharaStats : UINT8
 DECLARE_MULTICAST_DELEGATE(FDeathEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUpdateStatEvent,ECharaStats,CharaStats,float,newVal);
 
-const float PER_REGENERATE_STAMINA = 0.2f;
+const float PER_REGENERATE_STAMINA = 0.2f; 
 //管理 角色属性 HP 耐力
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class DARKSOULDEMO_API UCharacterStats : public UActorComponent

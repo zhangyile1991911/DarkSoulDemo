@@ -20,6 +20,9 @@
 #include "Component/Targeting.h"
 #include "Interface/CanTargeting.h"
 #include "DarkSoulSystemLibrary.h"
+#include "EDamageType.h"
+#include "Component/PotionInventory.h"
+#include "DamageType/DarkSoulDamageType.h"
 #include "Interface/SyncMsgToAnim.h"
 
 
@@ -52,7 +55,7 @@ ADarkSoulDemoCharacter::ADarkSoulDemoCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
+	
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -86,6 +89,7 @@ ADarkSoulDemoCharacter::ADarkSoulDemoCharacter()
 	StateComponent = CreateDefaultSubobject<UCharacterState>(TEXT("State"));
 	StatsComponent = CreateDefaultSubobject<UCharacterStats>(TEXT("Stats"));
 	TargetingComponent = CreateDefaultSubobject<UTargeting>(TEXT("Targeting"));
+	PotionComponent = CreateDefaultSubobject<UPotionInventory>(TEXT("PotionComponent"));
 	
 }
 
@@ -100,7 +104,7 @@ void ADarkSoulDemoCharacter::BeginPlay()
 	
 	//在Blueprint中创建HUD
 	OnTakePointDamage.AddDynamic(this,&ThisClass::TakePointDamage);
-
+	OnTakeRadialDamage.AddDynamic(this,&ThisClass::TakeRadialDamage);
 	GetMesh()->GetAnimInstance()->OnMontageEnded.AddDynamic(this,&ThisClass::WatchMontagedEnd);
 }
 
@@ -130,6 +134,7 @@ void ADarkSoulDemoCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void ADarkSoulDemoCharacter::RefreshCharacterStats()
 {
 	StatsComponent->ResetStats();
+	PotionComponent->RefreshPotionNum();
 }
 
 // float ADarkSoulDemoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
@@ -150,6 +155,7 @@ void ADarkSoulDemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			PlayerInputSubSystem = Subsystem;
 		}
 	}
 	
@@ -159,7 +165,7 @@ void ADarkSoulDemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		// Jumping
 		// EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		// EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
+		
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADarkSoulDemoCharacter::Move);
 
@@ -242,12 +248,45 @@ void ADarkSoulDemoCharacter::Look(const FInputActionValue& Value)
 void ADarkSoulDemoCharacter::Rolling(const FInputActionValue& Value)
 {
 	bool bSuccess = StatsComponent->DecreaseStamina(10);
-	if(bSuccess)
+	if(!bSuccess)
+	{
+		return;
+	}
+	//Rolling的时候只能获得 一维的输入
+	//需要判断角色 往哪个方向翻滚 需要 输入按键信息
+	
+	if(TargetingComponent->isLockOnTarget())
+	{
+		if(PlayerInputSubSystem && MoveAction)
+		{
+			FInputActionValue CurrentValue = PlayerInputSubSystem->GetPlayerInput()->GetActionValue(MoveAction);
+			FVector2d InputMove = CurrentValue.Get<FVector2d>();
+			UE_LOG(LogTemp,Log,TEXT("FInputActionValue x = %f y = %f"),InputMove.X,InputMove.Y);
+			FString MontageSectionName;
+			if(InputMove.Y >= 0.01f)
+			{
+				MontageSectionName = "Default";	
+			}
+			else if(InputMove.Y <= -0.01f)
+			{
+				MontageSectionName = "Back";
+			}
+			else if(InputMove.X >= 0.01f)
+			{
+				MontageSectionName = "Right";
+			}
+			else
+			{
+				MontageSectionName = "Left";
+			}
+			PlayAnimMontage(TargetedRollingAnimMontage,1.0f,FName(MontageSectionName));
+		}
+	}
+	else
 	{
 		this->PlayAnimMontage(RollingAnimMontage,1.0f);
 		StateComponent->AddState(Player_State_Rolling);
 	}
-	
 }
 
 void ADarkSoulDemoCharacter::Sprint(const FInputActionValue& Value)
@@ -378,10 +417,23 @@ bool ADarkSoulDemoCharacter::CanPerformanceAttack()
 	bool bHasWeapon = CombatComponent->GetMainWeapon() != nullptr;
 	bool bEnoughStamina = StatsComponent->CheckHasEnoughStamina(15.0f);
 	bool bEnableCombat = CombatComponent->CanEnableCombat();
+	bool bIsBlocking = StateComponent->GetGameplayContainer().HasTagExact(Player_State_Blocking);
 	UE_LOG(LogTemp,Log,TEXT("has Player_State_Attacking tag %d hasWeapon %d enoughStamina %d enableCombat %d"),
 		!bHasTag,bHasWeapon,bEnoughStamina,bEnableCombat);
-	return !bHasTag && bHasWeapon && bEnoughStamina && bEnableCombat;	
+	return !bHasTag && bHasWeapon && bEnoughStamina && bEnableCombat && !bIsBlocking;	
 }
+
+bool ADarkSoulDemoCharacter::CanAutomaticallyDrawWeapon()
+{
+	bool bHasTag = StateComponent->GetGameplayContainer().HasTagExact(Player_State_Attacking);
+	bool bHasWeapon = CombatComponent->GetMainWeapon() != nullptr;
+	bool bEnableCombat = CombatComponent->CanEnableCombat();
+	bool bIsBlocking = StateComponent->GetGameplayContainer().HasTagExact(Player_State_Blocking);
+	UE_LOG(LogTemp,Log,TEXT("has Player_State_Attacking tag %d hasWeapon %d enableCombat %d"),
+		!bHasTag,bHasWeapon,bEnableCombat);
+	return !bHasTag && bHasWeapon && !bEnableCombat && !bIsBlocking;
+}
+
 
 void ADarkSoulDemoCharacter::StartDelayTime(float latent, FTimerDelegate::TMethodPtr<ADarkSoulDemoCharacter> delayCallback)
 {
@@ -408,6 +460,10 @@ void ADarkSoulDemoCharacter::PerformanceAttack(const FInputActionValue& Value)
 	if(!CanPerformanceAttack())
 	{
 		UE_LOG(LogTemp,Log,TEXT("PerformanceAttack CanPerformanceAttack = false"));
+		if(CanAutomaticallyDrawWeapon())
+		{
+			ToggleWeapon(Value);
+		}
 		return;
 	}
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
@@ -417,7 +473,7 @@ void ADarkSoulDemoCharacter::PerformanceAttack(const FInputActionValue& Value)
 	}
 	else
 	{
-		HandleAttack(EMontageAction::LightAttack,Player_State_Attacking_LightAttack);
+		HandleAttack(EMontageAction::LightAttack,Player_State_Attacking_LightAttack);	
 	}
 }
 
@@ -427,6 +483,10 @@ void ADarkSoulDemoCharacter::PerformanceHeavyAttack(const FInputActionValue& Val
 	if(!CanPerformanceAttack())
 	{
 		UE_LOG(LogTemp,Log,TEXT("PerformanceHeavyAttack CanPerformanceAttack = false"));
+		if(CanAutomaticallyDrawWeapon())
+		{
+			ToggleWeapon(Value);
+		}
 		return;
 	}
 	
@@ -439,6 +499,10 @@ void ADarkSoulDemoCharacter::PerformanceSpecialAttack(const FInputActionValue& V
 	if(!CanPerformanceAttack())
 	{
 		UE_LOG(LogTemp,Log,TEXT("PerformanceHeavyAttack CanPerformanceAttack = false"));
+		if(CanAutomaticallyDrawWeapon())
+		{
+			ToggleWeapon(Value);
+		}
 		return;
 	}
 	HandleAttack(EMontageAction::SpecialAttack,Player_State_Attacking_SpecialAttack);
@@ -520,11 +584,27 @@ void ADarkSoulDemoCharacter::SwitchTargetRight(const FInputActionValue& Value)
 
 void ADarkSoulDemoCharacter::TogglePotion(const FInputActionValue& Value)
 {
+	if(!PotionComponent->HasPotion())return;
+	
 	bool bCanDrink = StateComponent->CanDrinkPotion();
 	if(!bCanDrink)return;
-
+	
 	StateComponent->AddState(Player_State_Potion);
 	PlayAnimMontage(DrinkPotion,1.0);
+	//生成药瓶
+	if(IsValid(PotionMesh))
+	{
+		PotionMesh->Destroy();
+	}
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	PotionMesh = GetWorld()->SpawnActor(PotionBP,&this->GetActorTransform(),SpawnParameters);
+	FAttachmentTransformRules Rules(
+		EAttachmentRule::SnapToTarget,
+		EAttachmentRule::SnapToTarget,
+		EAttachmentRule::SnapToTarget,
+		true);
+	PotionMesh->AttachToComponent(GetMesh(),Rules,FName("potionuse"));
 }
 
 void ADarkSoulDemoCharacter::HandleAttack(EMontageAction Action,FGameplayTag AttackTag)
@@ -572,6 +652,103 @@ void ADarkSoulDemoCharacter::TakePointDamage(AActor* DamagedActor, float Damage,
 	const UDamageType* DamageType, AActor* DamageCauser)
 {
 	// const APawn* pawn = InstigatedBy->GetPawn();
+	const UDarkSoulDamageType* dt = Cast<UDarkSoulDamageType>(DamageType);
+	if(dt == nullptr)return;
+	switch (dt->GetDamageType())
+	{
+	case EDamageType::HitBack:
+		TakeHitBack(InstigatedBy,Damage);
+		DoCameraShake();
+		break;
+	case EDamageType::KnockBack:
+		TakeKnockBack(InstigatedBy,Damage);
+		break;
+	}
+	// UGameplayStatics::PlaySoundAtLocation();
+}
+
+void ADarkSoulDemoCharacter::TakeRadialDamage(AActor* DamagedActor, float Damage,
+	const UDamageType* DamageType, FVector Origin,
+	const FHitResult& HitInfo, AController* InstigatedBy,
+	AActor* DamageCauser)
+{
+	const UDarkSoulDamageType* dt = Cast<UDarkSoulDamageType>(DamageType);
+	if(dt == nullptr)return;
+	switch (dt->GetDamageType())
+	{
+	case EDamageType::HitBack:
+		TakeHitBack(InstigatedBy,Damage);
+		break;
+		
+	case EDamageType::KnockBack:
+		TakeKnockBack(InstigatedBy,Damage);
+		break;
+	}
+}
+
+void ADarkSoulDemoCharacter::HandleDeathEvent()
+{
+	// StateComponent->ClearAllState();
+	StateComponent->AddState(Player_State_Death);
+	//忽略Pawn的碰撞
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,ECR_Ignore);
+	//开启布娃娃系统模拟物理
+	GetMesh()->SetCollisionProfileName("Ragdoll");
+	GetMesh()->SetSimulatePhysics(true);
+}
+
+void ADarkSoulDemoCharacter::WatchMontagedEnd(UAnimMontage* Montage, bool bInterrupted)
+{
+	if(bInterrupted)
+	{
+		UE_LOG(LogTemp,Log,TEXT("%s play Montage name %s bInterrupted %d"),*GetName(),*Montage->GetName(),bInterrupted)
+
+		const FGameplayTagContainer& container = StateComponent->GetGameplayContainer();
+        bool bIsAttacking = container.HasTag(Player_State_Attacking);
+
+		UE_LOG(LogTemp,Log,TEXT("%s state is attacking %d"),*GetName(),bIsAttacking)
+		if(bIsAttacking)
+		{
+			StateComponent->EnableMovement();
+		}
+	}
+	if(Montage->GetName() == "AM_HitReact")
+	{
+		StateComponent->RemoveState(Player_State_Hit);
+		StateComponent->EnableMovement();
+	}
+	else if(Montage->GetName() == "AM_RollUE5")
+	{
+		StateComponent->RemoveState(Player_State_Rolling);
+	}
+	else if(Montage->GetName() == "AM_Parry")
+	{
+		StatsComponent->ResumeRegenerateStamina();
+	}
+	else if(Montage->GetName() == "AM_DrinkPotion")
+	{
+		StateComponent->RemoveState(Player_State_Potion);
+		if(IsValid(PotionMesh)) PotionMesh->Destroy();
+	}
+	else if(Montage->GetName() == "AM_KnockDown_Getup")
+	{
+		StateComponent->RemoveState(Player_State_Hit);
+		StateComponent->EnableMovement();
+	}
+}
+
+bool ADarkSoulDemoCharacter::IsFacingActor(const AActor* DamageInstigator)
+{
+	//判断敌人位置是否在正面
+	FVector selfForward = GetActorForwardVector().GetSafeNormal();
+	FVector InstigatorLocation =  DamageInstigator->GetActorLocation();
+	FVector InstigatorForward = (InstigatorLocation - GetActorLocation()).GetSafeNormal();
+	float degress = FVector::DotProduct(selfForward,InstigatorForward);
+	return degress >= 0.5f;
+}
+
+void ADarkSoulDemoCharacter::TakeHitBack(AController* InstigatedBy,float Damage)
+{
 	bool canBlock = CanBlockAttack(InstigatedBy->GetPawn());
 	if(canBlock)
 	{
@@ -610,62 +787,20 @@ void ADarkSoulDemoCharacter::TakePointDamage(AActor* DamagedActor, float Damage,
 	PlayAnimMontage(MontageTuple.Key,1.0f,HitDirectionName);
 	StatsComponent->TakeDamage(Damage);
 	StateComponent->AddState(Player_State_Hit);
-	
-	// UGameplayStatics::PlaySoundAtLocation();
+	StateComponent->DisableMovement();
 }
 
-void ADarkSoulDemoCharacter::HandleDeathEvent()
+void ADarkSoulDemoCharacter::TakeKnockBack(AController* InstigatedBy,float Damage)
 {
-	// StateComponent->ClearAllState();
-	StateComponent->AddState(Player_State_Death);
-	//忽略Pawn的碰撞
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,ECR_Ignore);
-	//开启布娃娃系统模拟物理
-	GetMesh()->SetCollisionProfileName("Ragdoll");
-	GetMesh()->SetSimulatePhysics(true);
+	StatsComponent->TakeDamage(Damage);
+	StateComponent->AddState(Player_State_Hit);
+	StateComponent->DisableMovement();
+	PlayAnimMontage(KnockBack,1.0f);
 }
 
-void ADarkSoulDemoCharacter::WatchMontagedEnd(UAnimMontage* Montage, bool bInterrupted)
+void ADarkSoulDemoCharacter::DoCameraShake()
 {
-	if(bInterrupted)
-	{
-		UE_LOG(LogTemp,Log,TEXT("%s play Montage name %s bInterrupted %d"),*GetName(),*Montage->GetName(),bInterrupted)
-
-		const FGameplayTagContainer& container = StateComponent->GetGameplayContainer();
-        bool bIsAttacking = container.HasTag(Player_State_Attacking);
-
-		UE_LOG(LogTemp,Log,TEXT("%s state is attacking %d"),*GetName(),bIsAttacking)
-		if(bIsAttacking)
-		{
-			StateComponent->EnableMovement();
-		}
-	}
-	if(Montage->GetName() == "AM_HitReact")
-	{
-		StateComponent->RemoveState(Player_State_Hit);
-	}
-	if(Montage->GetName() == "AM_RollUE5")
-	{
-		StateComponent->RemoveState(Player_State_Rolling);
-	}
-	if(Montage->GetName() == "AM_Parry")
-	{
-		StatsComponent->ResumeRegenerateStamina();
-	}
-	if(Montage->GetName() == "AM_DrinkPotion")
-	{
-		StateComponent->RemoveState(Player_State_Potion);
-	}
-}
-
-bool ADarkSoulDemoCharacter::IsFacingActor(const AActor* DamageInstigator)
-{
-	//判断敌人位置是否在正面
-	FVector selfForward = GetActorForwardVector().GetSafeNormal();
-	FVector InstigatorLocation =  DamageInstigator->GetActorLocation();
-	FVector InstigatorForward = (InstigatorLocation - GetActorLocation()).GetSafeNormal();
-	float degress = FVector::DotProduct(selfForward,InstigatorForward);
-	return degress >= 0.5f;
+	UGameplayStatics::PlayWorldCameraShake(this,CameraShakeClass,GetActorLocation(),InnerRadius,OuterRadius,Falloff);
 }
 
 bool ADarkSoulDemoCharacter::CanBlockAttack(const AActor* DamageInstigator)
