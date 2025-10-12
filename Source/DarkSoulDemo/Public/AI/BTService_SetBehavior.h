@@ -19,7 +19,9 @@ class DARKSOULDEMO_API UBTService_SetBehavior : public UBTService
 
 	UPROPERTY()
 	TObjectPtr<ACharacter> AIPawn;
-	
+
+	UPROPERTY()
+	TObjectPtr<AActor> PreviousTarget;
 protected:
 	//Begin UBTService
 	virtual void OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;

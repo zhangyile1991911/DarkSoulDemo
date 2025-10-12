@@ -29,16 +29,19 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APickupItem> PickupItemClass;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	TObjectPtr<UTexture2D> EquipmentIcon;
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	virtual TObjectPtr<UStaticMesh> GetEquipmentMesh()const{return EquipmentMesh;}
-
+	TObjectPtr<UStaticMeshComponent> GetStaticComponent()const{return StaticMesh;}
 	virtual void EquipItem();
 	virtual void UnequipItem();
 	virtual void AttachToPlayer(FName SocketName);
 	virtual void DetachFromPlayer(FName SocketName);
 
 	virtual void GeneratePickupActor();
-	
+	void DisableMeshCollision();
 };

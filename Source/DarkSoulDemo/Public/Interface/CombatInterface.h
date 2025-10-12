@@ -30,5 +30,9 @@ public:
 	virtual float PerformAttack(EMontageAction AttackType) = 0;
 	virtual ECombatType CombatType() = 0;
 	virtual void Parried(AActor* Actor) = 0;
+	virtual void StealthKilled() = 0;
+	virtual bool CanBeStealthKilled() = 0;
+	virtual void RiposteKilled() = 0;
+	virtual bool CanBeRiposteKilled() = 0;
 	
 };

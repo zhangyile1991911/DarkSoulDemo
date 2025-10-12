@@ -8,12 +8,14 @@
 #include "Character/BaseEnemy.h"
 #include "GameFramework/Character.h"
 #include "EDarkSoulAIBehavior.h"
+#include "Component/CharacterCombat.h"
 #include "Component/CharacterState.h"
 
 UBTService_SetBehavior::UBTService_SetBehavior()
 {
 	bNotifyBecomeRelevant = true;
 	AttackRangeDistance = 250.0f;
+	PreviousTarget = nullptr;
 }
 
 void UBTService_SetBehavior::OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -45,10 +47,11 @@ void UBTService_SetBehavior::UpdateBehavior()
 	UBlackboardComponent* BlackboardComponent = AIController->GetBlackboardComponent();
 	if(BlackboardComponent == nullptr)return;
 
-	ABaseEnemy* BaseEnemy = Cast<ABaseEnemy>(AIPawn);
-	if(IsValid(BaseEnemy))
+	const ABaseEnemy* ControlledEnemy = Cast<ABaseEnemy>(AIPawn);
+	//判断进入昏厥状态
+	if(IsValid(ControlledEnemy))
 	{
-		const TObjectPtr<UCharacterState> StateComp = BaseEnemy->GetStateComponent();
+		const TObjectPtr<UCharacterState> StateComp = ControlledEnemy->GetStateComponent();
 		bool bStunned = StateComp->HasStateExact(Player_State_Parried);
 		if(bStunned)
 		{
@@ -56,8 +59,9 @@ void UBTService_SetBehavior::UpdateBehavior()
 			return;
 		}
 	}
-
+	
 	UObject* obj = BlackboardComponent->GetValueAsObject(TargetKey.SelectedKeyName);
+	
 	if(IsValid(obj))
 	{
 		AActor* targetActor = Cast<AActor>(obj);
@@ -76,10 +80,7 @@ void UBTService_SetBehavior::UpdateBehavior()
 	}
 	else
 	{
-		
-		if(!IsValid(BaseEnemy))return;
-
-		if(BaseEnemy->hasPatrolPoint())
+		if(ControlledEnemy->hasPatrolPoint())
 		{
 			BlackboardComponent->SetValueAsEnum(BehaviorKey.SelectedKeyName,uint8(EDarkSoulAIBehavior::Patrol));
 		}

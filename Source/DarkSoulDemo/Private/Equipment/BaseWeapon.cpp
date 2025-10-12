@@ -3,7 +3,9 @@
 
 #include "DarkSoulDemo/Public/Equipment/BaseWeapon.h"
 
+#include "EnemyManagerSubsystem.h"
 #include "MathUtil.h"
+#include "Character/BaseEnemy.h"
 #include "Component/CharacterCombat.h"
 #include "Component/CharacterState.h"
 #include "Component/CharacterStats.h"
@@ -99,7 +101,7 @@ void ABaseWeapon::UnequipItem()
 	combat->DisableCombat();
 	AttachToPlayer(UnEquippedSocket);
 	BaseCollision->SetWeapon(nullptr);
-
+	BaseCollision->ClearIgnoreActor();
 	// ACharacter* Character = Cast<ACharacter>(GetOwner());
 	// UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 	// if(IsValid(AnimInstance))
@@ -140,11 +142,13 @@ float ABaseWeapon::GetCostStamina(EMontageAction Action) const
 
 void ABaseWeapon::ActivateCollision(EWeaponCollisionType param)
 {
+	AddIgnoreActors(BaseCollision);
 	BaseCollision->TurnOnCollision();
 }
 
 void ABaseWeapon::DeactiveCollision(EWeaponCollisionType param)
 {
+	ClearIgnoreActors(BaseCollision);
 	BaseCollision->TurnOffCollision();
 }
 
@@ -166,6 +170,7 @@ TTuple<TObjectPtr<UAnimMontage>,FName> ABaseWeapon::GetMontageForAction(EMontage
 	{
 		Result.Key = row->Animation;
 		Result.Value = row->Animation->GetSectionName(comboIndex);
+		UE_LOG(LogTemp,Log,TEXT("ABaseWeapon::GetMontageForAction Before comboIndex %d"),comboIndex)
 		switch (Action)
 		{
 			case EMontageAction::LightAttack:
@@ -173,6 +178,7 @@ TTuple<TObjectPtr<UAnimMontage>,FName> ABaseWeapon::GetMontageForAction(EMontage
 				AdvanceStep(row->Animation);
 				break;
 		}
+		UE_LOG(LogTemp,Log,TEXT("ABaseWeapon::GetMontageForAction After comboIndex %d"),comboIndex)
 	}
 	
 	return MoveTemp(Result);
@@ -227,5 +233,34 @@ void ABaseWeapon::CheckStepContinuity(float DeltaTime)
 	if(nextInputInterval <= 0)
 	{
 		ResetCombo();
+		nextInputInterval = MaxInputInterval;
+		UE_LOG(LogTemp,Log,TEXT("ABaseWeapon::GetMontageForAction Reset comboIndex %d"),comboIndex)
 	}
+}
+
+void ABaseWeapon::AddIgnoreActors(TObjectPtr<UWeaponCollision> inCollision)
+{
+	AActor* WeaponOwner = GetOwner();
+	if(!IsValid(WeaponOwner))
+	{
+		return;
+	}
+	//IsA 用于实例判断
+	//IsChildOf 用于UClass
+	if(!WeaponOwner->IsA<ABaseEnemy>())
+	{
+		return;
+	}
+	inCollision->AddIgnoreActor(WeaponOwner);
+	inCollision->AddIgnoreActor(this);
+	UEnemyManagerSubsystem* Subsystem = GetWorld()->GetSubsystem<UEnemyManagerSubsystem>();
+	if(IsValid(Subsystem))
+	{
+		inCollision->AddIgnoreActorList(Subsystem->GetAllEnemies());
+	}
+}
+
+void ABaseWeapon::ClearIgnoreActors(TObjectPtr<UWeaponCollision> inCollision)
+{
+	inCollision->ClearIgnoreActor();
 }

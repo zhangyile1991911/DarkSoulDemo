@@ -67,6 +67,15 @@ void ABaseEquipment::GeneratePickupActor()
 	
 }
 
+void ABaseEquipment::DisableMeshCollision()
+{
+	if(StaticMesh != nullptr)
+	{
+		StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);	
+	}
+	
+}
+
 // Called every frame
 void ABaseEquipment::Tick(float DeltaTime)
 {

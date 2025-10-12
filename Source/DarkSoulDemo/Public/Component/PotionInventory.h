@@ -38,4 +38,6 @@ public:
 	void RefreshPotionNum();
 	void DrinkPotion();
 	bool HasPotion()const{return PotionQuantity > 0;}
+	UFUNCTION(BlueprintCallable)
+	void AddPotionQuantity(int num);
 };

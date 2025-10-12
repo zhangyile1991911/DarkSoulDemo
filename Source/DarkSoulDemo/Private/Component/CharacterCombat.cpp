@@ -3,6 +3,8 @@
 
 #include "Component/CharacterCombat.h"
 
+#include "EEquipmentType.h"
+#include "EnemyManagerSubsystem.h"
 #include "Equipment/BaseWeapon.h"
 #include "Equipment/BaseShield.h"
 #include "Equipment/Fists.h"
@@ -28,6 +30,11 @@ void UCharacterCombat::BeginPlay()
 	
 }
 
+void UCharacterCombat::BeginDestroy()
+{
+	Super::BeginDestroy();
+}
+
 
 // Called every frame
 void UCharacterCombat::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -42,8 +49,7 @@ void UCharacterCombat::SetWeapon(TObjectPtr<ABaseWeapon> InWeapon)
 {
 	if(IsValid(MainWeapon))
 	{
-		bool bIsFist = MainWeapon->GetClass()->IsChildOf<AFists>();
-		
+		bool bIsFist = MainWeapon->IsA<AFists>();
 		if(!bIsFist)
 		{
 			MainWeapon->GeneratePickupActor();
@@ -54,7 +60,7 @@ void UCharacterCombat::SetWeapon(TObjectPtr<ABaseWeapon> InWeapon)
 			params.TransformScaleMethod = ESpawnActorScaleMethod::MultiplyWithRoot;
 			// GetWorld()->SpawnActor(MainWeapon->GetClass(),&ActorTransform,params);
 			GetWorld()->DestroyActor(MainWeapon);
-			MainWeapon = nullptr;	
+			MainWeapon = nullptr;
 		}
 		bool isTwoHand = InWeapon->GetCombatType() == ECombatType::TwoHand;
 		bool hasMainShield = MainShield != nullptr;
@@ -62,8 +68,8 @@ void UCharacterCombat::SetWeapon(TObjectPtr<ABaseWeapon> InWeapon)
 		{
 			MainShield->UnequipItem();
 		}
-		
 	}
+	
 	if(InWeapon)
 	{
 		MainWeapon = InWeapon;
@@ -71,6 +77,10 @@ void UCharacterCombat::SetWeapon(TObjectPtr<ABaseWeapon> InWeapon)
 	else
 	{
 		MainWeapon = nullptr;
+	}
+	if(OnEquipmentChanged.IsBound())
+	{
+		OnEquipmentChanged.Broadcast(EEquipmentType::Weapon);
 	}
 }
 
@@ -93,6 +103,22 @@ void UCharacterCombat::SetShield(TObjectPtr<ABaseShield> InShield)
 	else
 	{
 		MainShield = nullptr;
+	}
+	if(OnEquipmentChanged.IsBound())
+	{
+		OnEquipmentChanged.Broadcast(EEquipmentType::Shield);
+	}
+}
+
+void UCharacterCombat::DisableCollision()
+{
+	if(IsValid(MainWeapon))
+	{
+		MainWeapon->DisableMeshCollision();
+	}
+	if(IsValid(MainShield))
+	{
+		MainShield->DisableMeshCollision();
 	}
 }
 

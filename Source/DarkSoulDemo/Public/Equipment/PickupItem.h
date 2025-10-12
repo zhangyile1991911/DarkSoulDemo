@@ -24,6 +24,7 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<ABaseEquipment> BaseEquipment;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

@@ -47,12 +47,16 @@ void AWarHammer::Tick(float DeltaTime)
 
 void AWarHammer::ActivateCollision(EWeaponCollisionType param)
 {
+	AddIgnoreActors(BaseCollision);
+	AddIgnoreActors(HandleCollision);
 	BaseCollision->TurnOnCollision();
 	HandleCollision->TurnOnCollision();
 }
 
 void AWarHammer::DeactiveCollision(EWeaponCollisionType param)
 {
+	ClearIgnoreActors(BaseCollision);
+	ClearIgnoreActors(HandleCollision);
 	BaseCollision->TurnOffCollision();
 	HandleCollision->TurnOffCollision();
 }

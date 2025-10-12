@@ -28,16 +28,20 @@ class DARKSOULDEMO_API UCharacterStats : public UActorComponent
 protected:
 	//Health
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Property")
-	float BaseHealth = 100.0f;
-	float MaxHealth = 100.0f;
+	float BaseHealth = 1.0f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Property")
+	float MaxHealth = 1.0f;
 
 	//Stamina
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Property")
     float BaseStamina = 100.0f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Property")
     float MaxStamina = 100.0f;
 public:
 	void Heal(float HealAmount);
 	void TakeDamage(float DamageAmount);
+	UFUNCTION(BlueprintCallable)
+	void HealToMaxHealth();
 private:
 	float StaminaRegenRate = PER_REGENERATE_STAMINA;
 public:

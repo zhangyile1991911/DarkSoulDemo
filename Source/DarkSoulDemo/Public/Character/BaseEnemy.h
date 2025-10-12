@@ -52,12 +52,21 @@ protected:
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	UAnimMontage* AM_Parried;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly)
+	UAnimMontage* BeStealthKill;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly)
+	UAnimMontage* RiposteVictim;
 	
 	UPROPERTY(BlueprintReadOnly,Category="Patrol")
 	int PatrolIndex;
 
+	//这个mesh只是为了在Editor中设置默认武器时候展示用,运行时候会删除
 	UPROPERTY()
-	TObjectPtr<UStaticMeshComponent> ShowWeaponMeshEditor;//这个mesh只是为了在Editor中设置默认武器时候展示用,运行时候会删除
+	TObjectPtr<UStaticMeshComponent> ShowWeaponMeshEditor;
+
+	bool bNeedRagDoll = true;
 public:
 	// Sets default values for this character's properties
 	ABaseEnemy();
@@ -65,6 +74,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void BeginDestroy() override;
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 	void ListenDeathEvent();
@@ -95,9 +105,18 @@ public:
 	virtual void DeactiveCollision(EWeaponCollisionType WeaponCollisionType)override;
 	virtual float PerformAttack(EMontageAction AttackType) override;
 	virtual void Parried(AActor* Actor) override;
+	virtual bool CanBeStealthKilled() override;
+	virtual void StealthKilled() override;
+	virtual void RiposteKilled() override;
+	virtual bool CanBeRiposteKilled() override;
 	//ICombatInterface End
+	UFUNCTION(BlueprintImplementableEvent)
+	bool CanBeStealthKilledForBP();
+	UFUNCTION(BlueprintImplementableEvent)
+	bool CanBeRiposteKilledForBP();
 	
-	void EquipDefaultWeapon(); 
+	void EquipDefaultWeapon();
+	void UnequipDefaultWeapon();
 	UFUNCTION(BlueprintImplementableEvent)
 	void ShowHPBar();
 	

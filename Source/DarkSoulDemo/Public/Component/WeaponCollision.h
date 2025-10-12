@@ -57,6 +57,8 @@ public:
 							   FActorComponentTickFunction* ThisTickFunction) override;
 
 	void AddIgnoreActor(AActor* Actor);
+	void AddIgnoreActorList(const TArray<AActor*>& ActorArr);
+	void ClearIgnoreActor(){IgnoreActors.Empty();}
 	void ClearAlreadyHit();
 	void TurnOnCollision();
 	void TurnOffCollision();

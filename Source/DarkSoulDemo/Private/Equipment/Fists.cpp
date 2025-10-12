@@ -48,6 +48,7 @@ void AFists::Tick(float DeltaTime)
 
 void AFists::ActivateCollision(EWeaponCollisionType param)
 {
+	AddIgnoreActors(BaseCollision);
 	if(param == EWeaponCollisionType::RightHand)
 	{
 		BaseCollision->TurnOnCollision();	
@@ -60,6 +61,7 @@ void AFists::ActivateCollision(EWeaponCollisionType param)
 
 void AFists::DeactiveCollision(EWeaponCollisionType param)
 {
+	ClearIgnoreActors(BaseCollision);
 	if(param == EWeaponCollisionType::RightHand)
 	{
 		BaseCollision->TurnOffCollision();	

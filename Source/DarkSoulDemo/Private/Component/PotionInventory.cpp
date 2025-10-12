@@ -56,3 +56,10 @@ void UPotionInventory::DrinkPotion()
 		PotionChangeEvent.Broadcast(PotionQuantity);
 }
 
+void UPotionInventory::AddPotionQuantity(int num)
+{
+	PotionQuantity += FMath::Clamp(num,0,num);
+	if(PotionChangeEvent.IsBound())
+		PotionChangeEvent.Broadcast(PotionQuantity);
+}
+

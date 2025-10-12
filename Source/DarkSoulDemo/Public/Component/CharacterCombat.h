@@ -10,6 +10,8 @@
 class ABaseShield;
 class ABaseWeapon;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEquipmentChanged,EEquipmentType,EquipmentType);
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class DARKSOULDEMO_API UCharacterCombat : public UActorComponent
 {
@@ -33,7 +35,7 @@ protected:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-
+	virtual void BeginDestroy() override;
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
@@ -41,8 +43,12 @@ public:
 
 	void SetWeapon(TObjectPtr<ABaseWeapon> InWeapon);
 	void SetShield(TObjectPtr<ABaseShield> InShield);
-	TObjectPtr<ABaseWeapon> GetMainWeapon()const{return MainWeapon;}
-	TObjectPtr<ABaseShield> GetMainShield()const{return MainShield;}
+
+	UFUNCTION(BlueprintCallable)
+	ABaseWeapon* GetMainWeapon()const{return MainWeapon;}
+
+	UFUNCTION(BlueprintCallable)
+	ABaseShield* GetMainShield()const{return MainShield;}
 	
 	bool GetBlockEnable()const{return bBlockEnable;}
 	bool CanEnableCombat()const{return bCombatEnable;}
@@ -53,4 +59,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool HasMainShield()const{return MainShield != nullptr;}
+
+	void DisableCollision();
+
+	UPROPERTY(BlueprintAssignable)
+	FEquipmentChanged OnEquipmentChanged;
 };

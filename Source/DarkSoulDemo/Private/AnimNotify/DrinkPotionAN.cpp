@@ -7,7 +7,7 @@
 
 void UDrinkPotionAN::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
-	Super::Notify(MeshComp, Animation);
+	Super::Notify(MeshComp, Animation,EventReference);
 	AActor* Actor = MeshComp->GetOwner();
 	if(!IsValid(Actor))return;
 

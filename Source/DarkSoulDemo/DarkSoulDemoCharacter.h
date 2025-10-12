@@ -40,7 +40,14 @@ public:
 	virtual void ActivateCollision(EWeaponCollisionType WeaponCollisionType) override;
 	virtual void DeactiveCollision(EWeaponCollisionType WeaponCollisionType) override;
 	virtual float PerformAttack(EMontageAction AttackType) override;
+	//击晕
 	virtual void Parried(AActor* Actor) override;
+	//背后偷袭
+	virtual bool CanBeStealthKilled() override;
+	virtual void StealthKilled() override;
+	//正面击杀
+	virtual void RiposteKilled() override;
+	virtual bool CanBeRiposteKilled() override;
 	//End CombatInterface
 private:
 	/** Camera boom positioning the camera behind the character */
@@ -111,6 +118,21 @@ private:
 
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="AnimMontage",meta=(AllowPrivateAccess="true"))
 	UAnimMontage* KnockBack;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="AnimMontage",meta=(AllowPrivateAccess="true"))
+	UAnimMontage* StealthKill;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="AnimMontage",meta=(AllowPrivateAccess="true"))
+	UAnimMontage* BeStealthKill;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="AnimMontage",meta=(AllowPrivateAccess="true"))
+	UAnimMontage* RipostePlayer;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="AnimMontage",meta=(AllowPrivateAccess="true"))
+	UAnimMontage* RiposteVictim;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="AnimMontage",meta=(AllowPrivateAccess="true"))
+	UAnimMontage* CampfireMontage;
 	
 	UPROPERTY(EditAnywhere,Category= Sound)
 	USoundBase* HitSound;
@@ -126,6 +148,10 @@ private:
 
 	UPROPERTY()
 	UEnhancedInputLocalPlayerSubsystem* PlayerInputSubSystem;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess="true"))
+	TSubclassOf<UUserWidget> DeathUserWidget;
+	
 	// int TargetCandidateIndex;
 public:
 	ADarkSoulDemoCharacter();
@@ -171,6 +197,8 @@ protected:
 	void ToggleWeaponInner();
 	bool CanPerformanceAttack();
 	bool CanAutomaticallyDrawWeapon();
+	bool CanPerformanceStealth();
+	bool CanPerformanceRiposte();
 	void StartDelayTime(float latent,FTimerDelegate::TMethodPtr<ADarkSoulDemoCharacter> delayCallback);
 	void StartDelayTime(float latent,TFunction<void()>&& delayCallback);
 	void ClearStateAndRegenerateStamina(FGameplayTag removeTag);
@@ -188,6 +216,10 @@ protected:
 	void TakeHitBack(AController* InstigatedBy,float Damage);
 	void TakeKnockBack(AController* InstigatedBy,float Damage);
 	void DoCameraShake();
+	bool AttemptToStealthKill();
+	bool AttemptToRiposteKill();
+	void CloseToTargetBack(AActor* Actor);
+	void CloseToTargetForward(AActor* Actor);
 protected:
 	//Montage
 	UPROPERTY(EditDefaultsOnly)
@@ -233,6 +265,19 @@ protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CameraShake")
 	TSubclassOf<UCameraShakeBase> CameraShakeClass;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Correction")
+	float StealthKillForwardCorrection = 70.0f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Correction")
+	float StealthKillRightCorrection;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Correction")
+	float RiposteKillForwardCorrection = 50.0f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Correction")
+	float RiposteKillRightCorrection = 50.0f;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	float StealthKillRadius;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	float StealthKillHalfHeight;
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -253,6 +298,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void RefreshCharacterStats();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void CreateCampfireWidget();
 	
+	void PlayCampfireSave();
 	// virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 };

@@ -21,8 +21,11 @@
 #include "Interface/CanTargeting.h"
 #include "DarkSoulSystemLibrary.h"
 #include "EDamageType.h"
+#include "Blueprint/UserWidget.h"
 #include "Component/PotionInventory.h"
 #include "DamageType/DarkSoulDamageType.h"
+#include "DynamicMesh/DynamicMesh3.h"
+#include "Equipment/BaseShield.h"
 #include "Interface/SyncMsgToAnim.h"
 
 
@@ -49,6 +52,25 @@ float ADarkSoulDemoCharacter::PerformAttack(EMontageAction AttackType)
 void ADarkSoulDemoCharacter::Parried(AActor* Actor)
 {
 	//todo 
+}
+
+bool ADarkSoulDemoCharacter::CanBeStealthKilled()
+{
+	return false;
+}
+
+void ADarkSoulDemoCharacter::StealthKilled()
+{
+	
+}
+
+void ADarkSoulDemoCharacter::RiposteKilled()
+{
+}
+
+bool ADarkSoulDemoCharacter::CanBeRiposteKilled()
+{
+	return false;
 }
 
 ADarkSoulDemoCharacter::ADarkSoulDemoCharacter()
@@ -135,6 +157,12 @@ void ADarkSoulDemoCharacter::RefreshCharacterStats()
 {
 	StatsComponent->ResetStats();
 	PotionComponent->RefreshPotionNum();
+}
+
+void ADarkSoulDemoCharacter::PlayCampfireSave()
+{
+	PlayAnimMontage(CampfireMontage);
+	CreateCampfireWidget();
 }
 
 // float ADarkSoulDemoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
@@ -434,6 +462,30 @@ bool ADarkSoulDemoCharacter::CanAutomaticallyDrawWeapon()
 	return !bHasTag && bHasWeapon && !bEnableCombat && !bIsBlocking;
 }
 
+bool ADarkSoulDemoCharacter::CanPerformanceStealth()
+{
+	bool bHasTag = StateComponent->GetGameplayContainer().HasTagExact(Player_State_Attacking);
+	bool bHasWeapon = CombatComponent->GetMainWeapon() != nullptr;
+	bool bHasSword = CombatComponent->GetMainWeapon()->GetCombatType() == ECombatType::SingleSword || CombatComponent->GetMainWeapon()->GetCombatType() == ECombatType::SwordShield;
+	bool bEnableCombat = CombatComponent->CanEnableCombat();
+	bool bIsBlocking = StateComponent->GetGameplayContainer().HasTagExact(Player_State_Blocking);
+	UE_LOG(LogTemp,Log,TEXT("has Player_State_Attacking tag %d hasWeapon %d enableCombat %d"),
+		!bHasTag,bHasWeapon,bEnableCombat);
+	return !bHasTag && bHasWeapon && bEnableCombat && !bIsBlocking && bHasSword;
+}
+
+bool ADarkSoulDemoCharacter::CanPerformanceRiposte()
+{
+	bool bHasTag = StateComponent->GetGameplayContainer().HasTagExact(Player_State_Attacking);
+	bool bHasWeapon = CombatComponent->GetMainWeapon() != nullptr;
+	bool bHasSword = CombatComponent->GetMainWeapon()->GetCombatType() == ECombatType::SingleSword || CombatComponent->GetMainWeapon()->GetCombatType() == ECombatType::SwordShield;
+	bool bEnableCombat = CombatComponent->CanEnableCombat();
+	bool bIsBlocking = StateComponent->GetGameplayContainer().HasTagExact(Player_State_Blocking);
+	UE_LOG(LogTemp,Log,TEXT("has Player_State_Attacking tag %d hasWeapon %d enableCombat %d"),
+		!bHasTag,bHasWeapon,bEnableCombat);
+	return !bHasTag && bHasWeapon && bEnableCombat && !bIsBlocking && bHasSword;
+}
+
 
 void ADarkSoulDemoCharacter::StartDelayTime(float latent, FTimerDelegate::TMethodPtr<ADarkSoulDemoCharacter> delayCallback)
 {
@@ -457,6 +509,14 @@ void ADarkSoulDemoCharacter::StartDelayTime(float latent, TFunction<void()>&& de
 
 void ADarkSoulDemoCharacter::PerformanceAttack(const FInputActionValue& Value)
 {
+	if(CanPerformanceStealth() && AttemptToStealthKill())
+	{
+		return;
+	}
+	if(CanPerformanceRiposte() && AttemptToRiposteKill())
+	{
+		return;
+	}
 	if(!CanPerformanceAttack())
 	{
 		UE_LOG(LogTemp,Log,TEXT("PerformanceAttack CanPerformanceAttack = false"));
@@ -621,8 +681,8 @@ void ADarkSoulDemoCharacter::HandleAttack(EMontageAction Action,FGameplayTag Att
 	const float costStamina = MainWeapon->GetCostStamina(Action);
 	StatsComponent->DecreaseStamina(costStamina);
 	
-
-	const bool bSameAttack = StateComponent->GetGameplayContainer().HasTagExact(AttackTag);
+	//如果当前攻击和上一次攻击不是一种类型 就需要重置Combo
+	const bool bSameAttack = StateComponent->GetAttackAction() == Action;
 	if(!bSameAttack)
 	{
 		MainWeapon->ResetCombo();
@@ -641,7 +701,8 @@ void ADarkSoulDemoCharacter::HandleAttack(EMontageAction Action,FGameplayTag Att
 	StateComponent->SetAttackAction(Action);
 	this->StartDelayTime(duration,[this,AttackTag]
 	{
-		StateComponent->SetAttackAction(EMontageAction::None);
+		// StateComponent->SetAttackAction(EMontageAction::None);
+		//动画播放完成立刻就删除AttackTag 会导致重置ResetCombo
 		ClearStateAndRegenerateStamina(AttackTag);
 	});
 	
@@ -695,6 +756,12 @@ void ADarkSoulDemoCharacter::HandleDeathEvent()
 	//开启布娃娃系统模拟物理
 	GetMesh()->SetCollisionProfileName("Ragdoll");
 	GetMesh()->SetSimulatePhysics(true);
+
+	TObjectPtr<UUserWidget> DeathWidget = CreateWidget<UUserWidget>(GetWorld(),DeathUserWidget);
+	if(IsValid(DeathWidget))
+	{
+		DeathWidget->AddToViewport();	
+	}
 }
 
 void ADarkSoulDemoCharacter::WatchMontagedEnd(UAnimMontage* Montage, bool bInterrupted)
@@ -735,6 +802,10 @@ void ADarkSoulDemoCharacter::WatchMontagedEnd(UAnimMontage* Montage, bool bInter
 		StateComponent->RemoveState(Player_State_Hit);
 		StateComponent->EnableMovement();
 	}
+	else if(Montage->GetName() == "AM_StealthKillPlayer" || Montage->GetName() == "AM_RipostePlayer")
+	{
+		StateComponent->RemoveState(Player_State_Attacking);
+	}
 }
 
 bool ADarkSoulDemoCharacter::IsFacingActor(const AActor* DamageInstigator)
@@ -756,7 +827,8 @@ void ADarkSoulDemoCharacter::TakeHitBack(AController* InstigatedBy,float Damage)
 		auto MontageTuple = CombatComponent->GetMainWeapon()->GetMontageForAction(EMontageAction::BlockReaction);
 		PlayAnimMontage(MontageTuple.Key,1.0f);
 		float costStamina = CombatComponent->GetMainWeapon()->GetCostStamina(EMontageAction::BlockReaction);
-		StatsComponent->DecreaseStamina(costStamina);	
+		StatsComponent->DecreaseStamina(costStamina);
+		return;
 	}
 
 	bool isParring = StateComponent->HasStateExact(Player_State_Parrying);
@@ -801,6 +873,165 @@ void ADarkSoulDemoCharacter::TakeKnockBack(AController* InstigatedBy,float Damag
 void ADarkSoulDemoCharacter::DoCameraShake()
 {
 	UGameplayStatics::PlayWorldCameraShake(this,CameraShakeClass,GetActorLocation(),InnerRadius,OuterRadius,Falloff);
+}
+
+bool ADarkSoulDemoCharacter::AttemptToStealthKill()
+{
+	FVector StartPoint = GetActorLocation();
+	FVector EndPoint = GetActorForwardVector() * StealthKillForwardCorrection + StartPoint;
+	TArray<AActor*> IgnoreActors;
+	IgnoreActors.Add(this);
+	FHitResult result;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+	const bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(this,
+		StartPoint,
+		EndPoint,
+		StealthKillRadius,
+		ObjectTypes,
+		false,
+		IgnoreActors,
+		EDrawDebugTrace::Type::ForDuration,
+		result,
+		true);
+	if(!bHit)return false;
+	
+	AActor* HitActor = result.GetActor();
+	if(!IsValid(HitActor))return false;
+
+	UCharacterStats* CharacterStats = HitActor->GetComponentByClass<UCharacterStats>();
+	if(!IsValid(CharacterStats))return false;
+
+	if(CharacterStats->IsDead())return false;
+
+	const bool bImplemented = HitActor->GetClass()->ImplementsInterface(UCombatInterface::StaticClass());
+	if(!bImplemented)return false;
+
+	ICombatInterface* CombatInterface = Cast<ICombatInterface>(HitActor);
+	if(!CombatInterface->CanBeStealthKilled())return false;
+	
+	FVector TargetForward = HitActor->GetActorForwardVector().GetSafeNormal();
+	FVector ActorForward = GetActorForwardVector().GetSafeNormal();
+	//偷袭只能从背后发起
+	//1 先判断是否是同一个方向
+	float Dot = FVector::DotProduct(TargetForward,ActorForward);
+	if(Dot < 0)
+	{//2 不同方向
+		return false;
+	}
+	float angleDeg = FMath::RadiansToDegrees(FMath::Acos(Dot));
+	if(angleDeg > 35.0f )
+	{//3 不在夹角范围内
+		return false;
+	}
+	
+	if(!GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
+	{
+		StateComponent->AddState(Player_State_Attacking);
+		CloseToTargetBack(HitActor);
+		PlayAnimMontage(StealthKill);
+		CombatInterface->StealthKilled();
+		return true;
+	}
+
+	return false;
+}
+
+bool ADarkSoulDemoCharacter::AttemptToRiposteKill()
+{
+	//球形检测
+	FVector StartPoint = GetActorLocation();
+	FVector EndPoint = GetActorForwardVector() * RiposteKillForwardCorrection + StartPoint;
+	TArray<AActor*> IgnoreActors;
+	IgnoreActors.Add(this);
+	FHitResult result;
+
+	//这个地方还没搞清楚 之后在学习下
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+	const bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(this,
+		StartPoint,
+		EndPoint,
+		StealthKillRadius,
+		ObjectTypes,
+		false,
+		IgnoreActors,
+		EDrawDebugTrace::Type::ForDuration,
+		result,
+		true);
+	if(!bHit)return false;
+	
+	AActor* HitActor = result.GetActor();
+	if(!IsValid(HitActor))return false;
+
+	const bool bImplemented = HitActor->GetClass()->ImplementsInterface(UCombatInterface::StaticClass());
+	if(!bImplemented)return false;
+
+	ICombatInterface* CombatInterface = Cast<ICombatInterface>(HitActor);
+	if(!CombatInterface->CanBeRiposteKilled())return false;
+	
+	FVector TargetForward = HitActor->GetActorForwardVector().GetSafeNormal();
+	FVector ActorForward = GetActorForwardVector().GetSafeNormal();
+	//1 先判断是否是同一个方向
+	float Dot = FVector::DotProduct(TargetForward,ActorForward);
+	if(Dot >= 0)
+	{//2 不同方向
+		return false;
+	}
+	float angleDeg = FMath::RadiansToDegrees(FMath::Acos(Dot));
+	if(angleDeg < 150.0f || angleDeg > 180.0f )
+	{//3 不在夹角范围内
+		return false;
+	}
+	
+	if(!GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
+	{
+		StateComponent->AddState(Player_State_Attacking);
+		CloseToTargetForward(HitActor);
+		PlayAnimMontage(RipostePlayer);
+		CombatInterface->RiposteKilled();
+		return true;
+	}
+
+	return false;
+}
+
+
+void ADarkSoulDemoCharacter::CloseToTargetBack(AActor* TargetActor)
+{
+	if(!IsValid(TargetActor))return;
+	//1 需要判断站在 敌人的前面还是后面
+	//2 走到敌人的正前或者正后
+	FVector forwardCorrection = TargetActor->GetActorForwardVector() * StealthKillForwardCorrection;
+	FVector standPosition;
+
+	forwardCorrection *= -1.0f;
+	standPosition = TargetActor->GetActorLocation() + forwardCorrection; 
+
+	DrawDebugBox(GetWorld(),standPosition,FVector(5,5,5),FColor::Red,false,5.0f);
+	// DrawDebugBox(GetWorld(),f2,FVector(5,5,5),FColor::Blue,false,5.0f);
+	SetActorLocation(standPosition);
+	
+	SetActorRotation(TargetActor->GetActorRotation());
+}
+
+void ADarkSoulDemoCharacter::CloseToTargetForward(AActor* TargetActor)
+{
+	if(!IsValid(TargetActor))return;
+	//1 需要判断站在 敌人的前面还是后面
+	//2 走到敌人的正前或者正后
+	FVector forwardCorrection = TargetActor->GetActorForwardVector() * RiposteKillForwardCorrection;
+	FVector standPosition;
+	
+	standPosition = TargetActor->GetActorLocation() + forwardCorrection; 
+
+	DrawDebugBox(GetWorld(),standPosition,FVector(5,5,5),FColor::Yellow,false,5.0f);
+	// DrawDebugBox(GetWorld(),f2,FVector(5,5,5),FColor::Blue,false,5.0f);
+	SetActorLocation(standPosition);
+	FVector dir = TargetActor->GetActorLocation() - this->GetActorLocation();
+	dir = dir.GetSafeNormal();
+	SetActorRotation(dir.Rotation());
+	// SetActorRotation(TargetActor->GetActorRotation());
 }
 
 bool ADarkSoulDemoCharacter::CanBlockAttack(const AActor* DamageInstigator)

@@ -4,6 +4,7 @@
 #include "Character/BaseEnemy.h"
 
 #include "BrainComponent.h"
+#include "EnemyManagerSubsystem.h"
 #include "Component/CharacterState.h"
 #include "Component/CharacterStats.h"
 #include "Component/CharacterCombat.h"
@@ -36,9 +37,6 @@ ABaseEnemy::ABaseEnemy()
 
 	ShowWeaponMeshEditor = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShowWeaponMeshEditor"));
 	ShowWeaponMeshEditor->SetupAttachment(RootComponent);
-
-	
-	
 }
 
 // Called when the game starts or when spawned
@@ -61,6 +59,34 @@ void ABaseEnemy::BeginPlay()
 	}
 	GetMesh()->GetAnimInstance()->OnMontageEnded.AddDynamic(this,&ThisClass::ListenAnimMontageFinish);
 
+	UEnemyManagerSubsystem* Subsystem = GetWorld()->GetSubsystem<UEnemyManagerSubsystem>();
+	if(Subsystem)
+	{
+		Subsystem->RegisterEnemy(this);
+	}
+}
+
+void ABaseEnemy::BeginDestroy()
+{
+	Super::BeginDestroy();
+	if(GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		if(GetMesh()->GetAnimInstance()->OnMontageEnded.IsBound())
+		{
+			GetMesh()->GetAnimInstance()->OnMontageEnded.RemoveDynamic(this,&ThisClass::ListenAnimMontageFinish);	
+		}
+	}
+
+	UE_LOG(LogTemp,Log,TEXT("ABaseEnemy::BeginDestroy"))
+	// WorldSubsystem会先于Actor的BeginDestroy销毁
+	// if(GetWorld())
+	// {
+	// 	UEnemyManagerSubsystem* Subsystem = GetWorld()->GetSubsystem<UEnemyManagerSubsystem>();
+	// 	if(Subsystem)
+	// 	{
+	// 		Subsystem->UnregisterEnemy(this);
+	// 	}	
+	// }
 	
 }
 
@@ -111,18 +137,30 @@ void ABaseEnemy::ListenDeathEvent()
 {
 	StateComponent->AddState(Player_State_Death);
 	//忽略Pawn的碰撞
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// SetActorEnableCollision(false);
+	// GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,ECR_Ignore);
 	//开启布娃娃系统模拟物理
-	GetMesh()->SetCollisionProfileName("Ragdoll");
-	GetMesh()->SetSimulatePhysics(true);
+	if(bNeedRagDoll)
+	{
+		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+		GetMesh()->SetSimulatePhysics(true);
+	}
+	
+	GetCharacterMovement()->DisableMovement();
+	
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetHiddenInGame(true);
+	
 	AEnemyAIController* controller = Cast<AEnemyAIController>(GetController());
 	if(IsValid(controller))
 	{
 		controller->GetBrainComponent()->StopLogic(FString("Enemy is Dead"));
 	}
 	HideHPBar();
-	//忽视相机
-	GetMesh()->SetCollisionResponseToChannel(ECC_Camera,ECR_Ignore);
+	
+	CombatComponent->DisableCollision();
 }
 
 void ABaseEnemy::HandlePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
@@ -141,6 +179,7 @@ void ABaseEnemy::HandlePointDamage(AActor* DamagedActor, float Damage, AControll
 
 void ABaseEnemy::ListenAnimMontageFinish(UAnimMontage* Montage, bool bInterrupted)
 {
+	UE_LOG(LogTemp,Log,TEXT("ABaseEnemy::ListenAnimMontageFinish %s bInterrupted %d "),*Montage->GetName(),bInterrupted)
 	if(Montage->GetName() == "AM_Parried")
 	{
 		StateComponent->RemoveState(Player_State_Parried);
@@ -148,6 +187,11 @@ void ABaseEnemy::ListenAnimMontageFinish(UAnimMontage* Montage, bool bInterrupte
 	if(Montage->GetName() == "AM_Boss_TwoHandSpecial")
 	{
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	}
+	if(Montage->GetName() == "AM_StealthKillVictim" || Montage->GetName() == "AM_RiposteVictim" )
+	{
+		StopAnimMontage();
+		StatsComponent->TakeDamage(999999999.0f);
 	}
 	StatsComponent->ResumeRegenerateStamina();
 }
@@ -207,7 +251,7 @@ float ABaseEnemy::PerformAttack(EMontageAction AttackType)
 	if(AttackType == EMontageAction::SpecialAttack)
 	{
 		int numSection = AnimMontage.Key->GetNumSections();
-		int index = 1;//FMath::RandRange(0,numSection);
+		int index = FMath::RandRange(0,numSection);
 		PlayAnimMontage(AnimMontage.Key,1.0,AnimMontage.Key->GetSectionName(index));
 		float duration = AnimMontage.Key->GetSectionLength(index);
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
@@ -229,24 +273,79 @@ void ABaseEnemy::Parried(AActor* Actor)
 	PlayAnimMontage(AM_Parried,1.0);
 }
 
+bool ABaseEnemy::CanBeStealthKilled()
+{
+	return CanBeStealthKilledForBP();
+}
+
+void ABaseEnemy::StealthKilled()
+{
+	AController* controller = GetController();
+	AAIController* AIController = Cast<AAIController>(controller);
+	AIController->GetBrainComponent()->StopLogic(TEXT("Stealth Killed"));
+	StopAnimMontage(nullptr);
+	GetCharacterMovement()->DisableMovement();
+	PlayAnimMontage(BeStealthKill);
+	// StatsComponent->TakeDamage(999999999);
+	bNeedRagDoll = false;
+}
+
+void ABaseEnemy::RiposteKilled()
+{
+	AController* controller = GetController();
+	AAIController* AIController = Cast<AAIController>(controller);
+	AIController->GetBrainComponent()->StopLogic(TEXT("Riposte Killed"));
+	StopAnimMontage(nullptr);
+	GetCharacterMovement()->DisableMovement();
+	PlayAnimMontage(RiposteVictim);
+	// StatsComponent->TakeDamage(999999999);
+	bNeedRagDoll = false;
+}
+
+bool ABaseEnemy::CanBeRiposteKilled()
+{
+	if(!CanBeRiposteKilledForBP())return false;
+	if(StatsComponent->IsDead())return false;
+	return StateComponent->HasStateExact(Player_State_Stunned);
+
+}
+
 void ABaseEnemy::EquipDefaultWeapon()
 {
 	if(!DefaultWeapon)return;
 
-	const FTransform& ActorTransform = GetActorTransform();
-	FActorSpawnParameters params;
-	params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::Undefined;
-	params.TransformScaleMethod = ESpawnActorScaleMethod::MultiplyWithRoot;
-	params.Owner = this;
+	ABaseWeapon* weapon = CombatComponent->GetMainWeapon();
+	if(!IsValid(weapon))
+	{
+		const FTransform& ActorTransform = GetActorTransform();
+		FActorSpawnParameters params;
+		params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::Undefined;
+		params.TransformScaleMethod = ESpawnActorScaleMethod::MultiplyWithRoot;
+		params.Owner = this;
 	
-	//错误 不应该使用 DefaultWeapon->GetClass()，传入的Class信息会变成 TSubclassOf的UClass
-	TObjectPtr<AActor> defaultWeapon = GetWorld()->SpawnActor(DefaultWeapon,&ActorTransform,params);
-	ABaseWeapon* weapon = Cast<ABaseWeapon>(defaultWeapon);
-	if(defaultWeapon && weapon)
+		//错误 不应该使用 DefaultWeapon->GetClass()，传入的Class信息会变成 TSubclassOf的UClass
+		TObjectPtr<AActor> defaultWeapon = GetWorld()->SpawnActor(DefaultWeapon,&ActorTransform,params);
+		weapon = Cast<ABaseWeapon>(defaultWeapon);
+		if(defaultWeapon && weapon)
+		{
+			weapon->EquipItem();
+			CombatComponent->SetWeapon(weapon);
+		}	
+	}
+	else
 	{
 		weapon->EquipItem();
-		CombatComponent->SetWeapon(weapon);
 	}
+	
+}
+
+void ABaseEnemy::UnequipDefaultWeapon()
+{
+	if(!DefaultWeapon)return;
+
+	ABaseWeapon* weapon = CombatComponent->GetMainWeapon();
+	if(!IsValid(weapon))return;
+	weapon->UnequipItem();
 }
 
 // void ABaseEnemy::ShowHPBar()

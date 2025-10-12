@@ -3,6 +3,9 @@
 
 #include "Campfire.h"
 
+#include "DarkSoulDemo/DarkSoulDemoCharacter.h"
+#include "GameFramework/Character.h"
+
 
 // Sets default values
 ACampfire::ACampfire()
@@ -22,5 +25,18 @@ void ACampfire::BeginPlay()
 void ACampfire::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void ACampfire::Interact(AActor* Actor)
+{
+	if(!IsValid(Actor))return;
+
+	ADarkSoulDemoCharacter* Character = Cast<ADarkSoulDemoCharacter>(Actor);
+	if(!IsValid(Character))return;
+	//播放动作
+	Character->PlayCampfireSave();
+	//播放粒子特效
+	UpdateCampfire(Character);
+	
 }
 

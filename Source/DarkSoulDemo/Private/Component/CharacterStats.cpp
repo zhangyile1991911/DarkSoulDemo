@@ -27,8 +27,6 @@ void UCharacterStats::BeginDestroy()
 {
 	Super::BeginDestroy();
 	UE_LOG(LogInit,Display,TEXT("UCharacterStats::BeginDestroy()"));
-	
-	
 }
 
 void UCharacterStats::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -88,6 +86,11 @@ void UCharacterStats::TakeDamage(float DamageAmount)
 	{
 		DeathEvent.Broadcast();
 	}
+}
+
+void UCharacterStats::HealToMaxHealth()
+{
+	BaseHealth = MaxHealth;
 }
 
 void UCharacterStats::IncreaseDefence(float DefenceAmount)

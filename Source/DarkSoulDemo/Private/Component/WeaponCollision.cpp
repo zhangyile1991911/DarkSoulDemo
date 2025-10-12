@@ -2,6 +2,9 @@
 
 
 #include "DarkSoulDemo/Public/Component/WeaponCollision.h"
+
+#include "EnemyManagerSubsystem.h"
+#include "Character/BaseEnemy.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -55,6 +58,15 @@ void UWeaponCollision::AddIgnoreActor(AActor* Actor)
 	}
 }
 
+void UWeaponCollision::AddIgnoreActorList(const TArray<AActor*>& ActorArr)
+{
+	if(ActorArr.IsEmpty())return;
+	for (auto Element : ActorArr)
+	{
+		AddIgnoreActor(Element);
+	}
+}
+
 void UWeaponCollision::ClearAlreadyHit()
 {
 	AlreadyHit.Empty();
@@ -70,6 +82,7 @@ void UWeaponCollision::TurnOffCollision()
 {
 	ClearAlreadyHit();
 	bCollisionOn = false;
+	ClearIgnoreActor();
 }
 
 

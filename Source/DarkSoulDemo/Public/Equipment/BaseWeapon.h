@@ -43,7 +43,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	int comboIndex = 0;
 
-	static constexpr float MaxInputInterval = 2.5f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	float MaxInputInterval = 60.0f;
 	
 	UPROPERTY(BlueprintReadOnly)
 	float nextInputInterval = 0.0f;
@@ -77,10 +78,13 @@ protected:
 	
 	void AdvanceStep(TObjectPtr<UAnimMontage> AnimMontagePtr);
 	void CheckStepContinuity(float DeltaTime);
+
+	void AddIgnoreActors(TObjectPtr<UWeaponCollision>);
+	void ClearIgnoreActors(TObjectPtr<UWeaponCollision>);
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
+	
 	void EquipItem() override;
 	void UnequipItem() override;
 	void AttachToPlayer(FName SocketName)override;

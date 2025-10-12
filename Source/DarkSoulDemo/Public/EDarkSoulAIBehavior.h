@@ -9,5 +9,5 @@ enum class EDarkSoulAIBehavior : uint8
 	MeleeAttack UMETA(DisplayName="MeleeAttack"),
 	Approach  UMETA(DisplayName="Approach"),
 	Stunned UMETA(DisplayName="Stunned"),
-	Strafe UMETA(DisplayName="Strafe")
+	Strafe UMETA(DisplayName="Strafe"),
 };
