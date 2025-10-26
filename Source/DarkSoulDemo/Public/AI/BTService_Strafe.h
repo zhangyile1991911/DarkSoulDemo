@@ -16,8 +16,12 @@ class DARKSOULDEMO_API UBTService_Strafe : public UBTService
 protected:
 	UPROPERTY()
 	TObjectPtr<APawn> ControlledPawn;
-
+	UPROPERTY()
 	TObjectPtr<AAIController> OwnerController;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	float KeepDistance = 10.0f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	float MoveDistance = 100.0f;
 public:
 	UBTService_Strafe();
 	

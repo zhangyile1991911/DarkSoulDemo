@@ -14,7 +14,7 @@ class DARKSOULDEMO_API UIFrameAN : public UAnimNotifyState
 {
 	GENERATED_BODY()
 
-	ECollisionResponse OriginCollisionResponse;
+	// ECollisionResponse OriginCollisionResponse;
 public:
 	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference) override;
 	virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;

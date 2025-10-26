@@ -7,13 +7,13 @@
 #include "Equipment/BaseWeapon.h"
 
 // Sets default values
-AJadeSword::AJadeSword()
+AJadeSword::AJadeSword(const FObjectInitializer& ObjectInitializer):Super(ObjectInitializer)
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	BaseCollision->SocketStart = "WeaponStart";
-	BaseCollision->SocketEnd = "WeaponEnd";
-	BaseCollision->SphereRadius = 5.0f;
+	// BaseCollision->SocketStart = "WeaponStart";
+	// BaseCollision->SocketEnd = "WeaponEnd";
+	// BaseCollision->SphereRadius = 5.0f;
 	CombatType = ECombatType::SingleSword;
 }
 

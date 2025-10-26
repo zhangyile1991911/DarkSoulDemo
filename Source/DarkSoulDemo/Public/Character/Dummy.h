@@ -14,7 +14,7 @@ class DARKSOULDEMO_API ADummy : public ACharacter,public ICanTargeting
 
 public:
 	// Sets default values for this character's properties
-	ADummy();
+	ADummy(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned

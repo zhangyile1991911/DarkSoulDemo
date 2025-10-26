@@ -25,10 +25,10 @@ protected:
     ECombatType CombatType = ECombatType::None;
 public:
 	// Sets default values for this actor's properties
-	ABaseWeapon();
+	ABaseWeapon(const FObjectInitializer& ObjectInitializer);
 	ECombatType GetCombatType()const{return CombatType;}
 protected:
-	UPROPERTY(VisibleInstanceOnly,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TObjectPtr<UWeaponCollision> BaseCollision;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
@@ -73,6 +73,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void BeginDestroy() override;
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	
 	virtual void HandleDamageActor(const FHitResult& hitData);
 	

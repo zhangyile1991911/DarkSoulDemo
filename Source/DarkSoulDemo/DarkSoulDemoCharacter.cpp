@@ -282,7 +282,6 @@ void ADarkSoulDemoCharacter::Rolling(const FInputActionValue& Value)
 	}
 	//Rolling的时候只能获得 一维的输入
 	//需要判断角色 往哪个方向翻滚 需要 输入按键信息
-	
 	if(TargetingComponent->isLockOnTarget())
 	{
 		if(PlayerInputSubSystem && MoveAction)
@@ -682,8 +681,10 @@ void ADarkSoulDemoCharacter::HandleAttack(EMontageAction Action,FGameplayTag Att
 	StatsComponent->DecreaseStamina(costStamina);
 	
 	//如果当前攻击和上一次攻击不是一种类型 就需要重置Combo
+	//前回の攻撃タイプと異なる場合で、連続引数をリセットする
+	const bool bIsFirst = StateComponent->GetAttackAction() != EMontageAction::None;
 	const bool bSameAttack = StateComponent->GetAttackAction() == Action;
-	if(!bSameAttack)
+	if(!bSameAttack && bIsFirst)
 	{
 		MainWeapon->ResetCombo();
 	}

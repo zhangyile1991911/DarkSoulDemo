@@ -7,20 +7,21 @@
 
 
 // Sets default values
-AWarHammer::AWarHammer()
+AWarHammer::AWarHammer(const FObjectInitializer& ObjectInitializer):Super(ObjectInitializer)
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
-	BaseCollision->SocketStart = "WeaponStart";
-	BaseCollision->SocketEnd = "WeaponEnd";
-	BaseCollision->SphereRadius = 10.0f;
+	// BaseCollision->SocketStart = "WeaponStart";
+	// BaseCollision->SocketEnd = "WeaponEnd";
+	// BaseCollision->SphereRadius = 10.0f;
 
-	HandleCollision = CreateDefaultSubobject<UWeaponCollision>(TEXT("WarHammerHandle"),true);
+	// HandleCollision = CreateDefaultSubobject<UWeaponCollision>(TEXT("WarHammerHandle"),true);
+	HandleCollision = CreateDefaultSubobject<UWeaponCollision>(TEXT("WarHammerHandle"));
 	HandleCollision->SetWeapon(this->StaticMesh);
-	HandleCollision->SocketStart = "WeaponHandleStart";
-	HandleCollision->SocketEnd = "WeaponHandleEnd";
-	HandleCollision->SphereRadius = 5.0f;
+	// HandleCollision->SocketStart = "WeaponHandleStart";
+	// HandleCollision->SocketEnd = "WeaponHandleEnd";
+	// HandleCollision->SphereRadius = 5.0f;
 
 	CombatType = ECombatType::TwoHand;
 }
@@ -65,7 +66,7 @@ void AWarHammer::EquipItem()
 {
 	Super::EquipItem();
 	HandleCollision->SetWeapon(StaticMesh);
-	HandleCollision->AddIgnoreActor(GetOwner());
+	// HandleCollision->AddIgnoreActor(GetOwner());
 }
 
 void AWarHammer::UnequipItem()

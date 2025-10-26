@@ -4,6 +4,7 @@
 #include "AnimNotify/IFrameAN.h"
 
 #include "Components/CapsuleComponent.h"
+#include "DarkSoulDemo/DarkSoulTraceChannels.h"
 #include "GameFramework/Character.h"
 
 void UIFrameAN::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration,
@@ -19,8 +20,9 @@ void UIFrameAN::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase*
 	UCapsuleComponent* CapsuleComponent = Character->GetCapsuleComponent();
 	if(!IsValid(CapsuleComponent))return;
 	// 虽然可以通过设置CollisionResponse开启无敌帧 但是 会穿过Boss
-	OriginCollisionResponse = CapsuleComponent->GetCollisionResponseToChannel(ECC_Pawn);
-	CapsuleComponent->SetCollisionResponseToChannel(ECC_Pawn,ECR_Ignore);
+	CapsuleComponent->SetCollisionObjectType(ECC_Rolling);
+	// OriginCollisionResponse = CapsuleComponent->GetCollisionResponseToChannel(ECC_Pawn);
+	// CapsuleComponent->SetCollisionResponseToChannel(ECC_Pawn,ECR_Ignore);
 }
 
 void UIFrameAN::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -37,5 +39,6 @@ void UIFrameAN::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* A
 	UCapsuleComponent* CapsuleComponent = Character->GetCapsuleComponent();
 	if(!IsValid(CapsuleComponent))return;
 
-	CapsuleComponent->SetCollisionResponseToChannel(ECC_Pawn,OriginCollisionResponse);
+	// CapsuleComponent->SetCollisionResponseToChannel(ECC_Pawn,OriginCollisionResponse);
+	CapsuleComponent->SetCollisionObjectType(ECC_Pawn);
 }

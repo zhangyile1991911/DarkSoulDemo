@@ -69,7 +69,7 @@ protected:
 	bool bNeedRagDoll = true;
 public:
 	// Sets default values for this character's properties
-	ABaseEnemy();
+	ABaseEnemy(const FObjectInitializer& ObjectInitializer);
 	
 protected:
 	// Called when the game starts or when spawned

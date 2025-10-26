@@ -13,7 +13,7 @@ class DARKSOULDEMO_API AJadeSword : public ABaseWeapon
 
 public:
 	// Sets default values for this actor's properties
-	AJadeSword();
+	AJadeSword(const FObjectInitializer& ObjectInitializer);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

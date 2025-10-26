@@ -18,7 +18,7 @@ protected:
 	TObjectPtr<UWeaponCollision> LeftHand;
 public:
 	// Sets default values for this actor's properties
-	AFists();
+	AFists(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned

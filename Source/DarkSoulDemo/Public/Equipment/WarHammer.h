@@ -18,7 +18,7 @@ protected:
 	FDelegateHandle DelegateOfHandle;
 public:
 	// Sets default values for this actor's properties
-	AWarHammer();
+	AWarHammer(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned

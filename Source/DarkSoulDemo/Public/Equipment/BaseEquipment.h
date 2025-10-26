@@ -15,7 +15,7 @@ class DARKSOULDEMO_API ABaseEquipment : public AActor
 
 public:
 	// Sets default values for this actor's properties
-	ABaseEquipment();
+	ABaseEquipment(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned

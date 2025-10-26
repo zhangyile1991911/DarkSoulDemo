@@ -10,19 +10,19 @@
 
 
 // Sets default values
-AFists::AFists()
+AFists::AFists(const FObjectInitializer& ObjectInitializer):Super(ObjectInitializer)
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	
-	BaseCollision->SocketEnd = FName("hand_r");
-	BaseCollision->SocketStart = FName("hand_r");
-	BaseCollision->SphereRadius = 5.0f;
+	// BaseCollision->SocketEnd = FName("hand_r");
+	// BaseCollision->SocketStart = FName("hand_r");
+	// BaseCollision->SphereRadius = 5.0f;
 	
-	LeftHand = CreateDefaultSubobject<UWeaponCollision>(TEXT("LeftHand"),true);
-	LeftHand->SocketStart = FName("hand_l");
-	LeftHand->SocketEnd = FName("hand_l");
-	LeftHand->SphereRadius = 5.0f;
+	LeftHand = CreateDefaultSubobject<UWeaponCollision>(TEXT("LeftHand"));
+	// LeftHand->SocketStart = FName("hand_l");
+	// LeftHand->SocketEnd = FName("hand_l");
+	// LeftHand->SphereRadius = 5.0f;
 
 	CombatType = ECombatType::Fists;
 }

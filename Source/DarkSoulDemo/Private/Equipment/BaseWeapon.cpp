@@ -18,12 +18,14 @@
 
 
 // Sets default values
-ABaseWeapon::ABaseWeapon()
+ABaseWeapon::ABaseWeapon(const FObjectInitializer& ObjectInitializer):Super(ObjectInitializer)
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	BaseCollision = CreateDefaultSubobject<UWeaponCollision>(TEXT("Collision"),true);
+	// BaseCollision = CreateDefaultSubobject<UWeaponCollision>(TEXT("Collision"),true);
+	//TODO 非常重要的一个坑，最后一个参数是bTransient是临时的，所以不会被正确序列化 保存到.uasset中
+	BaseCollision = ObjectInitializer.CreateDefaultSubobject<UWeaponCollision>(this,TEXT("Collision"));
 }
 
 // Called when the game starts or when spawned
@@ -39,6 +41,11 @@ void ABaseWeapon::BeginDestroy()
 	BaseCollision->DamageActorDelegate.Remove(DamageActorHandle);
 }
 
+void ABaseWeapon::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	UE_LOG(LogTemp,Log,TEXT("ABaseWeapon::PostEditChangeProperty"))
+}
 
 
 // Called every frame
@@ -245,13 +252,13 @@ void ABaseWeapon::AddIgnoreActors(TObjectPtr<UWeaponCollision> inCollision)
 	{
 		return;
 	}
+	inCollision->AddIgnoreActor(WeaponOwner);
 	//IsA 用于实例判断
 	//IsChildOf 用于UClass
 	if(!WeaponOwner->IsA<ABaseEnemy>())
 	{
 		return;
 	}
-	inCollision->AddIgnoreActor(WeaponOwner);
 	inCollision->AddIgnoreActor(this);
 	UEnemyManagerSubsystem* Subsystem = GetWorld()->GetSubsystem<UEnemyManagerSubsystem>();
 	if(IsValid(Subsystem))

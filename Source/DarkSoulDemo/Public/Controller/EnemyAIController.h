@@ -13,7 +13,7 @@ class DARKSOULDEMO_API AEnemyAIController : public AAIController
 
 public:
 	// Sets default values for this actor's properties
-	AEnemyAIController();
+	AEnemyAIController(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned

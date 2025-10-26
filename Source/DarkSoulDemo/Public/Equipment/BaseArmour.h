@@ -16,7 +16,7 @@ protected:
 	TObjectPtr<USkeletalMeshComponent> SkeletalMeshComponent;
 public:
 	// Sets default values for this actor's properties
-	ABaseArmour();
+	ABaseArmour(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned

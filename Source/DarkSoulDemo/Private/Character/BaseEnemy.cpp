@@ -19,23 +19,23 @@
 
 
 // Sets default values
-ABaseEnemy::ABaseEnemy()
+ABaseEnemy::ABaseEnemy(const FObjectInitializer& ObjectInitializer):Super(ObjectInitializer)
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
-	StateComponent = CreateDefaultSubobject<UCharacterState>(TEXT("State"));
-	StatsComponent = CreateDefaultSubobject<UCharacterStats>(TEXT("Stats"));
-	CombatComponent = CreateDefaultSubobject<UCharacterCombat>(TEXT("Combat"));
-	RotatorComponent = CreateDefaultSubobject<UCharacterRotator>(TEXT("Rotator"));
+	StateComponent = ObjectInitializer.CreateDefaultSubobject<UCharacterState>(this,TEXT("State"));
+	StatsComponent = ObjectInitializer.CreateDefaultSubobject<UCharacterStats>(this,TEXT("Stats"));
+	CombatComponent = ObjectInitializer.CreateDefaultSubobject<UCharacterCombat>(this,TEXT("Combat"));
+	RotatorComponent = ObjectInitializer.CreateDefaultSubobject<UCharacterRotator>(this,TEXT("Rotator"));
 	
-	LockOnWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockOnWidget"));
+	LockOnWidget = ObjectInitializer.CreateDefaultSubobject<UWidgetComponent>(this,TEXT("LockOnWidget"));
 	LockOnWidget->SetupAttachment(RootComponent);
 
-	HPBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBarWidget"));
+	HPBarWidget = ObjectInitializer.CreateDefaultSubobject<UWidgetComponent>(this,TEXT("HPBarWidget"));
 	HPBarWidget->SetupAttachment(RootComponent);
 
-	ShowWeaponMeshEditor = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShowWeaponMeshEditor"));
+	ShowWeaponMeshEditor = ObjectInitializer.CreateDefaultSubobject<UStaticMeshComponent>(this,TEXT("ShowWeaponMeshEditor"));
 	ShowWeaponMeshEditor->SetupAttachment(RootComponent);
 }
 

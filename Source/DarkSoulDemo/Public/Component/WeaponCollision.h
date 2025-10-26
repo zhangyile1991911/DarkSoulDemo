@@ -34,6 +34,15 @@ protected:
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjectTypes;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	FName SocketStart;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	FName SocketEnd;
+	
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	float SphereRadius;
 public:
 	// Sets default values for this component's properties
 	UWeaponCollision();
@@ -44,13 +53,11 @@ protected:
 
 public:
 	virtual void InitializeComponent() override;
-
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	FName SocketStart;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	FName SocketEnd;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	float SphereRadius;
+	// virtual void OnRegister() override;
+	//在蓝图中修改了某些属性后的回调
+	// virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+	
+	
 	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
