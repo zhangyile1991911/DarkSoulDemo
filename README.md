@@ -1,6 +1,12 @@
 このGitリポジトリは、就職活動用のポートフォリオです。
 主に、ダークソウルズ風の戦闘システムとクライミングシステムのデモが含まれています。
 
+## 実装した機能
+
+<img src=".github\graphics\blockkill.gif" width="100%">
+
+<img src=".github\graphics\valutingkill.gif" width="100%">
+
 ## 敌人对峙时候移动逻辑（解决）
 1. 先看下之前逻辑
 2. 对手朝向 ,判断距离是否近或远
