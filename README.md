@@ -53,3 +53,73 @@ CustomActor::CustomActor(const FObjectInitializer& ObjectInitializer):Super(Obje
 在角色翻滚过程中，不被攻击。新增了一个ObjectType Rolling。
 
 在角色翻滚时候将角色的ObjectType切换成Rolling，翻滚结束再切换回Pawn。通过这样的方法来创建无敌帧
+
+## 替换默认CharacterMovementComponentName问题
+
+```cpp
+class ADarkSoulDemoCharacter : public ACharacter
+{
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	UCustomMovementComponent* CustomMovementComponent;
+}
+
+ADarkSoulDemoCharacter::ADarkSoulDemoCharacter(const FObjectInitializer& ObjectInitializer)
+:Super(ObjectInitializer.SetDefaultSubobjectClass<UCustomMovementComponent>(ACharacter::CharacterMovementComponentName))
+{
+    //这个地方可以正确获得Component
+    CustomMovementComponent = Cast<UCustomMovementComponent>(GetCharacterMovement());
+}
+
+void ADarkSoulDemoCharacter::OnClimbActionStarted(const FInputActionValue& Value)
+{
+	//这个地方判断为null
+	if(!IsValid(CustomMovementComponent))return;
+
+	if(!CustomMovementComponent->IsClimbing())
+	{
+		CustomMovementComponent->ToggleClimbing(true);
+	}
+	else
+	{
+		CustomMovementComponent->ToggleClimbing(false);
+	}
+}
+```
+
+验证方法
+```cpp
+ADarkSoulDemoCharacter::ADarkSoulDemoCharacter(const FObjectInitializer& ObjectInitializer)
+:Super(ObjectInitializer.SetDefaultSubobjectClass<UCustomMovementComponent>(ACharacter::CharacterMovementComponentName))
+{
+    //这个地方可以正确获得Component
+    CustomMovementComponent = Cast<UCustomMovementComponent>(GetCharacterMovement());
+    UE_LOG(LogTemp, Warning, TEXT("[Ctor] CustomMovementComponent = %p"), CustomMovementComponent);
+}
+
+
+void ADarkSoulDemoCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	UE_LOG(LogTemp, Warning, TEXT("[PostInit] CustomMovementComponent = %p"), CustomMovementComponent);
+    //这个地方是null
+}
+
+void ADarkSoulDemoCharacter::BeginPlay()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[BeginPlay] CustomMovementComponent = %p"), CustomMovementComponent);
+    //这个地方也是null
+}
+```
+
+C++ 构造函数
+↓
+组件创建
+↓
+Blueprint CDO 构造（默认值加载覆盖）
+↓
+PostInitComponents()
+↓
+BeginPlay()
+
+Blueprint的“Class Default Object (CDO)” 在这个过程中把所有暴露 UPROPERTY 的成员恢复成它自己的默认值（通常是 None / 0）。
+如果你的指针在 C++ 里不是 Transient 或 EditDefaultsOnly=false，就会被蓝图默认覆盖。
